@@ -9,12 +9,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <style>
-      /* --- Custom Styles & Overrides --- */
+      body, html { -webkit-tap-highlight-color: transparent; }
       ::-webkit-scrollbar { width: 12px; height: 12px; }
       ::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.2); border-radius: 6px; border: 3px solid transparent; background-clip: content-box; }
       ::-webkit-scrollbar-track { background-color: transparent; }
-      
-      /* --- Markdown & Prose Styles --- */
       .prose {
         --tw-prose-body: theme(colors.brand-text-primary);
         --tw-prose-headings: theme(colors.brand-text-primary);
@@ -23,42 +21,14 @@
       .prose h2 { font-size: 1.5rem; font-weight: 700; margin-top: 2em; margin-bottom: 1em; }
       .prose a { color: theme(colors.brand-accent); text-decoration: none; font-weight: 500; }
       .prose a:hover { text-decoration: underline; }
-      .prose ul { list-style-type: disc; padding-left: 1.75rem; margin-top: 1em; margin-bottom: 1em; }
-      .prose ol { list-style-type: decimal; padding-left: 1.75rem; margin-top: 1em; margin-bottom: 1em; }
-      .prose .footnote-ref { color: theme(colors.brand-accent); font-size: 0.8em; vertical-align: super; line-height: 0; text-decoration: none; }
-      .prose .footnote-ref:hover { text-decoration: underline; }
+      .prose ul, .prose ol { margin-top: 1em; margin-bottom: 1em; }
+      .prose .footnote-ref { font-size: 0.8em; vertical-align: super; line-height: 0; }
       .prose .footnotes { margin-top: 2.5em; padding-top: 1.5em; border-top: 1px solid theme(colors.brand-border); font-size: 0.9em; }
-      .prose .footnotes ol { padding-left: 1.5em; }
-      .prose .footnotes li p { display: inline; }
-      .prose .footnote-backref { font-family: sans-serif; color: theme(colors.brand-accent); text-decoration: none; }
-      .prose .footnote-backref:hover { text-decoration: underline; }
-
-      /* --- Animation Keyframes --- */
-      @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-      @keyframes fadeOut {
-        from { opacity: 1; }
-        to { opacity: 0; }
-      }
-      .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+      
+      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+      .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
       .animate-fade-out { animation: fadeOut 0.2s ease-in forwards; }
-
-      /* --- Mobile Responsiveness Fix --- */
-      @media (max-width: 767px) {
-        #app-container {
-          height: auto;
-          overflow-y: auto;
-        }
-        #sidebar {
-          height: auto;
-        }
-        #main-content {
-          height: auto;
-          min-height: 100vh; 
-        }
-      }
     </style>
     <script>
       tailwind.config = {
@@ -69,8 +39,8 @@
               serif: ['Lora', 'serif'],
             },
             colors: {
-              'brand-bg': '#f7f7f7',
-              'brand-sidebar': '#ededed',
+              'brand-bg': '#f8f8fa',
+              'brand-sidebar': '#ffffff',
               'brand-surface': '#ffffff',
               'brand-border': '#e5e5e5',
               'brand-text-primary': '#1d1d1f',
@@ -80,8 +50,9 @@
             },
             borderRadius: { 'xl': '1rem', '2xl': '1.5rem' },
             boxShadow: {
-              'subtle': '0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05)',
-              'medium': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+              'subtle': '0 1px 3px 0 rgb(0 0 0 / 0.05)',
+              'medium': '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+              'xl': '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
             }
           }
         }
@@ -98,9 +69,17 @@
 </head>
 <body class="bg-brand-bg antialiased">
     
-    <div id="app-container" class="flex flex-col md:flex-row h-screen font-sans text-brand-text-primary bg-brand-bg overflow-hidden">
-        <aside id="sidebar" class="w-full md:w-72 lg:w-80 bg-brand-sidebar/70 backdrop-blur-xl flex flex-col h-full border-r border-black/10 shrink-0"></aside>
-        <main id="main-content" class="flex-1 h-full relative overflow-hidden"></main>
+    <div id="app-container" class="relative min-h-screen md:flex md:flex-row font-sans text-brand-text-primary bg-brand-bg overflow-hidden">
+        <!-- Overlay for mobile sidebar -->
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-30 hidden md:hidden"></div>
+
+        <!-- Sidebar -->
+        <aside id="sidebar" class="fixed top-0 left-0 w-80 bg-brand-sidebar flex flex-col h-full border-r border-black/10 z-40
+                                   transform -translate-x-full transition-transform duration-300 ease-in-out
+                                   md:relative md:w-72 lg:w-80 md:translate-x-0 md:shrink-0"></aside>
+        
+        <!-- Main content -->
+        <main id="main-content" class="flex-1 h-screen relative overflow-y-auto"></main>
     </div>
 
     <script type="module">
@@ -108,7 +87,6 @@
       import { marked } from 'marked';
       import DOMPurify from 'dompurify';
 
-      // --- APPLICATION STATE ---
       const state = {
         relatives: relativesData,
         selectedRelativeId: null,
@@ -116,21 +94,25 @@
         isLoading: true,
       };
 
-      // --- DOM ELEMENT REFERENCES ---
       const sidebarEl = document.getElementById('sidebar');
       const mainContentEl = document.getElementById('main-content');
+      const overlayEl = document.getElementById('sidebar-overlay');
+      let menuButtonEl; // Will be created dynamically
 
-      // --- ICON SVGs ---
       const ICONS = {
-        bookOpen: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-brand-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>`,
-        search: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-brand-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>`,
-        // --- НОВЫЕ ИКОНКИ ---
-        warning: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`,
-        info: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`,
-        lock: `<svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>`,
+        bookOpen: `<svg ... ></svg>`, // Содержимое иконок опущено для краткости
+        search: `<svg ... ></svg>`,
+        warning: `<svg ... ></svg>`,
+        info: `<svg ... ></svg>`,
+        lock: `<svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>`,
+        menu: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>`
       };
+      // Полные версии иконок
+      ICONS.bookOpen = `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-brand-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>`;
+      ICONS.search = `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-brand-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>`;
+      ICONS.warning = `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`;
+      ICONS.info = `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
 
-      // --- TEMPLATE GENERATION FUNCTIONS ---
 
       const renderSidebar = () => {
         const filteredRelatives = state.relatives
@@ -139,7 +121,7 @@
         
         const relativesListHtml = filteredRelatives.map(relative => `
           <li data-id="${relative.id}" class="transition-all duration-200">
-            <a href="#" class="block p-2 my-1 rounded-lg text-left w-full transition-colors duration-150 ${state.selectedRelativeId === relative.id ? 'bg-brand-accent text-white shadow-lg shadow-blue-500/30' : 'text-brand-text-primary hover:bg-black/10'}">
+            <a href="#" class="block p-2.5 my-1 rounded-lg text-left w-full transition-colors duration-150 ${state.selectedRelativeId === relative.id ? 'bg-brand-accent text-white shadow-md shadow-blue-500/30' : 'text-brand-text-primary hover:bg-black/5'}">
               <span class="font-medium">${relative.name}</span>
             </a>
           </li>
@@ -147,18 +129,18 @@
 
         sidebarEl.innerHTML = `
           <div class="p-4 border-b border-black/10 flex items-center justify-between flex-shrink-0">
-            <div class="flex items-center space-x-2">
+            <div class="flex items-center space-x-3">
               ${ICONS.bookOpen}
               <h1 class="text-xl font-semibold text-brand-text-primary">FamiliPedia</h1>
             </div>
           </div>
           <div class="p-4 flex-shrink-0">
             <div class="relative">
-              <input type="text" placeholder="Search..." value="${state.searchTerm}" id="search-input" class="w-full pl-9 pr-4 py-2 bg-black/5 text-brand-text-primary placeholder-brand-text-secondary border border-transparent rounded-lg focus:ring-2 focus:ring-brand-accent focus:outline-none focus:bg-white transition-all duration-300">
+              <input type="text" placeholder="Search..." value="${state.searchTerm}" id="search-input" class="w-full pl-10 pr-4 py-2 bg-gray-100 text-brand-text-primary placeholder-brand-text-secondary border border-transparent rounded-lg focus:ring-2 focus:ring-brand-accent focus:outline-none focus:bg-white transition-all duration-300">
               <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">${ICONS.search}</div>
             </div>
           </div>
-          <nav class="flex-1 overflow-y-auto px-2 pt-0 p-4">
+          <nav class="flex-1 overflow-y-auto px-4 pt-0">
             <ul id="relatives-list">${relativesListHtml}</ul>
           </nav>
         `;
@@ -166,212 +148,182 @@
       
       const renderInfobox = (relative) => {
           if (!relative.details && !relative.imageUrl) return '';
-
           const hasDetails = relative.details && Object.keys(relative.details).length > 0;
-          const detailsHtml = hasDetails ? Object.entries(relative.details).map(([key, value]) => `
-              <div key="${key}">
-                  <dt class="font-semibold text-brand-text-secondary">${key}</dt>
-                  <dd class="text-brand-text-primary mt-0.5">
-                      ${Array.isArray(value) ? `<ul class="list-none pl-0">${value.map(item => `<li>${item}</li>`).join('')}</ul>` : value}
-                  </dd>
-              </div>
-          `).join('') : '';
-
           return `
-              <div class="float-right ml-6 mb-6 w-full sm:w-64 md:w-72 lg:w-80 clear-right [shape-outside:margin-box] [shape-margin:1.5rem]">
-                  <aside class="border border-brand-border rounded-xl bg-brand-bg/80 backdrop-blur-sm shadow-subtle overflow-hidden">
+              <div class="mb-6 sm:float-right sm:ml-6 sm:mb-6 w-full sm:w-64 md:w-72 lg:w-80 clear-right [shape-outside:margin-box] [shape-margin:1.5rem]">
+                  <aside class="border border-brand-border rounded-xl bg-gray-50/50 backdrop-blur-sm shadow-subtle overflow-hidden">
                       ${relative.imageUrl ? `<img src="${relative.imageUrl}" alt="${relative.name}" class="w-full h-auto object-cover">` : ''}
-                      ${hasDetails ? `<div class="p-4 text-sm"><dl class="space-y-3">${detailsHtml}</dl></div>` : ''}
+                      ${hasDetails ? `<div class="p-4 text-sm"><dl class="space-y-3">${Object.entries(relative.details).map(([key, value]) => `
+                          <div><dt class="font-semibold text-brand-text-secondary">${key}</dt><dd class="text-brand-text-primary mt-0.5">${Array.isArray(value) ? `<ul class="list-none pl-0">${value.map(item => `<li>${item}</li>`).join('')}</ul>` : value}</dd></div>`).join('')}</dl></div>` : ''}
                   </aside>
-              </div>
-          `;
+              </div>`;
       };
 
       const renderMarkdown = (content) => {
         marked.use({ gfm: true, breaks: false });
-        const rawHtml = marked.parse(content);
-        const sanitizedHtml = DOMPurify.sanitize(rawHtml);
-        return `<div class="prose prose-lg max-w-none text-brand-text-primary leading-relaxed font-serif selection:bg-brand-accent selection:text-white">${sanitizedHtml}</div>`;
+        return `<div class="prose prose-lg max-w-none text-brand-text-primary leading-relaxed font-serif selection:bg-brand-accent selection:text-white">${DOMPurify.sanitize(marked.parse(content))}</div>`;
       };
 
-      // --- НОВАЯ ФУНКЦИЯ для рендеринга плашек ---
       const renderBanners = (relative) => {
-        if (!relative.banners || relative.banners.length === 0) return '';
-        
-        const bannersHtml = relative.banners.map(banner => {
-            let icon = ICONS.info;
-            let bgColor = 'bg-blue-100/80';
-            let textColor = 'text-blue-800';
-            let borderColor = 'border-blue-200/80';
-
-            if (banner.type === 'neutrality') {
-                icon = ICONS.warning;
-                bgColor = 'bg-yellow-100/80';
-                textColor = 'text-yellow-800';
-                borderColor = 'border-yellow-300/80';
-            }
-
-            return `
-                <div class="flex items-start p-4 space-x-4 ${bgColor} ${textColor} border ${borderColor} rounded-xl">
-                    <div class="shrink-0">${icon}</div>
-                    <p class="text-sm font-medium">${banner.text}</p>
-                </div>
-            `;
-        }).join('');
-
-        return `<div class="space-y-4 mb-8">${bannersHtml}</div>`;
+        if (!relative.banners?.length) return '';
+        return `<div class="space-y-4 mb-8">${relative.banners.map(banner => {
+            const config = banner.type === 'neutrality' 
+              ? { icon: ICONS.warning, bg: 'bg-yellow-100/80', text: 'text-yellow-800', border: 'border-yellow-300/80' }
+              : { icon: ICONS.info, bg: 'bg-blue-100/80', text: 'text-blue-800', border: 'border-blue-200/80' };
+            return `<div class="flex items-start p-4 space-x-4 ${config.bg} ${config.text} border ${config.border} rounded-xl"><div class="shrink-0">${config.icon}</div><p class="text-sm font-medium">${banner.text}</p></div>`;
+        }).join('')}</div>`;
       };
       
-      // --- НОВАЯ ФУНКЦИЯ для рендеринга экрана блокировки ---
       const renderLockOverlay = (relative) => {
         if (!relative.lockInfo?.locked) return '';
-
         return `
-            <div class="absolute inset-0 bg-white/70 backdrop-blur-sm flex flex-col items-center justify-center text-center p-8 z-10 rounded-2xl">
-                <div class="text-gray-400 mb-4">${ICONS.lock}</div>
-                <h3 class="text-2xl font-bold text-brand-text-primary mb-2">Статья заблокирована</h3>
-                <p class="max-w-md text-brand-text-secondary">${relative.lockInfo.reason}</p>
-            </div>
-        `;
+            <div class="absolute inset-0 bg-brand-surface/90 backdrop-blur-md flex flex-col items-center justify-center text-center p-4 z-20">
+              <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-5">
+                    ${ICONS.lock.replace('class="w-10 h-10"', 'class="w-10 h-10 text-red-500"')}
+                </div>
+                <h3 class="text-2xl font-bold font-serif text-brand-text-primary mb-2">Статья заблокирована</h3>
+                <p class="text-brand-text-secondary">${relative.lockInfo.reason}</p>
+              </div>
+            </div>`;
       };
 
       const getArticleViewHtml = (relative) => {
         const isLocked = relative.lockInfo?.locked;
-        const contentWrapperClass = isLocked ? 'blur-sm pointer-events-none' : '';
-
         return `
-        <div class="p-6 sm:p-8 md:p-12 h-full overflow-y-auto bg-brand-surface">
-          <div class="max-w-4xl mx-auto relative">
-            ${renderLockOverlay(relative)}
-            <div class="${contentWrapperClass}">
-              <div class="mb-8">
-                <h1 class="text-4xl md:text-5xl font-bold font-serif text-brand-text-primary">${relative.name}</h1>
-              </div>
-              ${renderBanners(relative)}
-              <div class="border-t border-brand-border pt-8">
-                ${renderInfobox(relative)}
-                ${renderMarkdown(relative.content)}
+        <div class="h-full bg-brand-surface">
+            <!-- Mobile Header -->
+            <header class="p-4 border-b border-brand-border flex items-center md:hidden sticky top-0 bg-brand-surface/80 backdrop-blur-sm z-10">
+                <button id="menu-button" class="p-2 -ml-2 mr-2 text-gray-600 hover:bg-gray-100 rounded-full">${ICONS.menu}</button>
+                <h2 class="text-lg font-semibold text-brand-text-primary truncate">FamiliPedia</h2>
+            </header>
+            <div class="p-6 sm:p-8 md:p-12">
+              <div class="max-w-4xl mx-auto relative">
+                ${renderLockOverlay(relative)}
+                <div class="${isLocked ? 'blur-md pointer-events-none' : ''}">
+                  <div class="mb-8">
+                    <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold font-serif text-brand-text-primary">${relative.name}</h1>
+                  </div>
+                  ${renderBanners(relative)}
+                  <div class="md:border-t md:border-brand-border pt-8">
+                    ${renderInfobox(relative)}
+                    ${renderMarkdown(relative.content)}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      `;
+        </div>`;
       };
       
-      const getWelcomeScreenHtml = () => `
+      const getWelcomeScreenHtml = () => `...`; // Опущено для краткости
+      ICONS.welcomeBook = `<svg xmlns="http://www.w3.org/2000/svg" class="w-24 h-24 text-gray-200 mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>`;
+      const getWelcomeScreenHtmlFull = () => `
         <div class="flex flex-col items-center justify-center h-full text-center p-8 bg-brand-surface">
-            <div><svg xmlns="http://www.w3.org/2000/svg" class="w-24 h-24 text-gray-200 mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg></div>
+            <div>${ICONS.welcomeBook}</div>
             <h2 class="text-4xl font-bold font-serif text-brand-text-primary mb-2">Welcome to FamiliPedia</h2>
             <p class="text-xl text-brand-text-secondary max-w-2xl mb-8 font-sans">Your personal space to cherish family stories. Select a relative from the list to begin.</p>
-        </div>
-      `;
-
-      const getSkeletonLoaderHtml = () => {
+        </div>`;
+      
+      const getSkeletonLoaderHtml = () => `...`; // Опущено для краткости
+      const getSkeletonLoaderHtmlFull = () => {
           const shimmer = (className) => `<div class="bg-gray-200 rounded ${className || ''} animate-pulse"></div>`;
           return `
             <div class="p-6 sm:p-8 md:p-12 h-full overflow-y-auto bg-brand-surface">
                 <div class="max-w-4xl mx-auto">
-                    <div class="mb-8">${shimmer('h-12 w-3/4 mb-4')} ${shimmer('h-6 w-1/2')}</div>
-                    <div class="border-t border-brand-border pt-8">
-                        <div class="mb-8 float-right ml-8 w-64 clear-right"><div class="bg-gray-200 rounded-lg w-full h-96 animate-pulse"></div></div>
-                        <div class="space-y-4">${shimmer('h-5 w-full')} ${shimmer('h-5 w-full')} ${shimmer('h-5 w-11/12')} <br/> ${shimmer('h-5 w-full')} ${shimmer('h-5 w-10/12')} <br/> ${shimmer('h-5 w-full')} ${shimmer('h-5 w-4/5')}</div>
+                    <div class="mb-8">${shimmer('h-10 md:h-12 w-3/4 mb-4')} ${shimmer('h-6 w-1/2')}</div>
+                    <div class="md:border-t border-brand-border pt-8">
+                        <div class="mb-6 float-none sm:float-right sm:ml-6 w-full sm:w-64"><div class="bg-gray-200 rounded-lg w-full h-80 animate-pulse"></div></div>
+                        <div class="space-y-4 pt-4">${shimmer('h-5 w-full')} ${shimmer('h-5 w-full')} ${shimmer('h-5 w-11/12')} <br/> ${shimmer('h-5 w-full')} ${shimmer('h-5 w-10/12')} <br/> ${shimmer('h-5 w-full')} ${shimmer('h-5 w-4/5')}</div>
                     </div>
                 </div>
             </div>`;
       };
       
-      // --- RENDER & LOGIC FUNCTIONS ---
-      
       const renderMainContent = () => {
         let newContentHtml;
         if (state.isLoading) {
-          newContentHtml = getSkeletonLoaderHtml();
+          newContentHtml = getSkeletonLoaderHtmlFull();
         } else if (state.selectedRelativeId) {
           const relative = state.relatives.find(r => r.id === state.selectedRelativeId);
-          newContentHtml = relative ? getArticleViewHtml(relative) : getWelcomeScreenHtml();
+          newContentHtml = relative ? getArticleViewHtml(relative) : getWelcomeScreenHtmlFull();
         } else {
-          newContentHtml = getWelcomeScreenHtml();
+          newContentHtml = getWelcomeScreenHtmlFull();
         }
 
-        const oldContentEl = mainContentEl.firstElementChild;
-        
-        const renderNewContent = () => {
-          mainContentEl.innerHTML = newContentHtml;
-          mainContentEl.firstElementChild.classList.add('animate-fade-in');
-        };
+        mainContentEl.innerHTML = newContentHtml;
+        const newContent = mainContentEl.firstElementChild;
+        if (newContent) {
+            newContent.classList.add('animate-fade-in');
+        }
 
-        if (oldContentEl) {
-          oldContentEl.classList.remove('animate-fade-in');
-          oldContentEl.classList.add('animate-fade-out');
-          oldContentEl.addEventListener('animationend', renderNewContent, { once: true });
-        } else {
-          renderNewContent();
+        // Re-attach listener for the new menu button
+        menuButtonEl = document.getElementById('menu-button');
+        if (menuButtonEl) {
+            menuButtonEl.addEventListener('click', toggleSidebar);
         }
       };
       
-      const updateSidebarList = () => {
-        const filteredRelatives = state.relatives
-          .filter(r => r.name.toLowerCase().includes(state.searchTerm.toLowerCase()))
-          .sort((a, b) => a.name.localeCompare(b.name));
-
-        const listEl = document.getElementById('relatives-list');
-        if (listEl) {
-          listEl.innerHTML = filteredRelatives.map(relative => `
-            <li data-id="${relative.id}" class="transition-all duration-200">
-              <a href="#" class="block p-2 my-1 rounded-lg text-left w-full transition-colors duration-150 ${state.selectedRelativeId === relative.id ? 'bg-brand-accent text-white shadow-lg shadow-blue-500/30' : 'text-brand-text-primary hover:bg-black/10'}">
-                <span class="font-medium">${relative.name}</span>
-              </a>
-            </li>
-          `).join('');
-        }
-      };
-
       const handleSelectRelative = (id) => {
         if (id === state.selectedRelativeId && !state.isLoading) return;
 
         state.isLoading = true;
-        renderMainContent(); // Show skeleton
+        renderMainContent();
         
         setTimeout(() => {
           state.selectedRelativeId = id;
           state.isLoading = false;
           renderMainContent();
-          // Обновляем список, чтобы правильно отобразить активный элемент
-          updateSidebarList();
+          renderSidebar(); // Re-render sidebar to update active state
         }, 250);
       };
 
-      const attachSidebarListeners = () => {
+      // --- MOBILE SIDEBAR LOGIC ---
+      const toggleSidebar = () => {
+          const isOpen = sidebarEl.classList.contains('translate-x-0');
+          if (isOpen) {
+              sidebarEl.classList.replace('translate-x-0', '-translate-x-full');
+              overlayEl.classList.add('hidden');
+          } else {
+              sidebarEl.classList.replace('-translate-x-full', 'translate-x-0');
+              overlayEl.classList.remove('hidden');
+          }
+      };
+
+      const attachListeners = () => {
+        // Search
         sidebarEl.addEventListener('input', e => {
           if (e.target.id === 'search-input') {
             state.searchTerm = e.target.value;
-            updateSidebarList();
+            renderSidebar();
           }
         });
+        // Select relative
         sidebarEl.addEventListener('click', e => {
           const link = e.target.closest('a');
           const li = link?.parentElement;
           if (li && li.dataset.id) {
             e.preventDefault();
             handleSelectRelative(li.dataset.id);
+            if (window.innerWidth < 768) {
+              toggleSidebar(); // Close sidebar on mobile after selection
+            }
           }
         });
+        // Close with overlay
+        overlayEl.addEventListener('click', toggleSidebar);
       };
       
-      // --- INITIALIZATION ---
       const init = () => {
         state.relatives.forEach(relative => {
           if (relative.imageUrl) new Image().src = relative.imageUrl;
         });
-        
         if (state.relatives.length > 0) {
           state.selectedRelativeId = state.relatives[0].id;
         }
         state.isLoading = false;
-
         renderSidebar();
         renderMainContent();
-        attachSidebarListeners();
+        attachListeners();
       };
 
       init();
