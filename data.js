@@ -56,7 +56,7 @@ She always recommended visiting the [Kew Gardens in London](https://www.kew.org/
         },
         // --- НОВАЯ ПРОСТАЯ СТРУКТУРА ---
         lockReason: '',
-        neutralityBanner: '',
+        neutralityBanner: 'Стиль этой статьи может быть не нейтральным. Внутри рассказывается о событии о котором у всех разное мнение. Для безопасности и этики уведомляем, что написаное в этой статье еще не проверялось на нейтральность.',
         unverifiedBanner: ''
     },
     {
