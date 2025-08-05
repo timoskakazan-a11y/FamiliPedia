@@ -26,9 +26,7 @@
       .prose .footnotes { margin-top: 2.5em; padding-top: 1.5em; border-top: 1px solid theme(colors.brand-border); font-size: 0.9em; }
       
       @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-      @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
       .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
-      .animate-fade-out { animation: fadeOut 0.2s ease-in forwards; }
     </style>
     <script>
       tailwind.config = {
@@ -97,22 +95,17 @@
       const sidebarEl = document.getElementById('sidebar');
       const mainContentEl = document.getElementById('main-content');
       const overlayEl = document.getElementById('sidebar-overlay');
-      let menuButtonEl; // Will be created dynamically
+      let menuButtonEl;
 
       const ICONS = {
-        bookOpen: `<svg ... ></svg>`, // Содержимое иконок опущено для краткости
-        search: `<svg ... ></svg>`,
-        warning: `<svg ... ></svg>`,
-        info: `<svg ... ></svg>`,
-        lock: `<svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>`,
-        menu: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>`
+        bookOpen: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-brand-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>`,
+        search: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-brand-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>`,
+        warning: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`,
+        info: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`,
+        lock: `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>`,
+        menu: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>`,
+        welcomeBook: `<svg xmlns="http://www.w3.org/2000/svg" class="w-24 h-24 text-gray-200 mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>`
       };
-      // Полные версии иконок
-      ICONS.bookOpen = `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-brand-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>`;
-      ICONS.search = `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-brand-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>`;
-      ICONS.warning = `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`;
-      ICONS.info = `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
-
 
       const renderSidebar = () => {
         const filteredRelatives = state.relatives
@@ -174,22 +167,39 @@
         }).join('')}</div>`;
       };
       
-      const renderLockOverlay = (relative) => {
+      // --- НОВЫЙ ДИЗАЙН БЛОКА БЛОКИРОВКИ ---
+      const renderLockNotice = (relative) => {
         if (!relative.lockInfo?.locked) return '';
         return `
-            <div class="absolute inset-0 bg-brand-surface/90 backdrop-blur-md flex flex-col items-center justify-center text-center p-4 z-20">
-              <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full">
-                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-5">
-                    ${ICONS.lock.replace('class="w-10 h-10"', 'class="w-10 h-10 text-red-500"')}
+            <div class="border-t border-brand-border mt-8 pt-8">
+                <div class="bg-gray-100 border border-gray-200 rounded-xl p-6 flex items-center space-x-5">
+                    <div class="shrink-0">${ICONS.lock}</div>
+                    <div>
+                        <h3 class="text-lg font-bold text-brand-text-primary font-serif">Просмотр статьи ограничен</h3>
+                        <p class="text-brand-text-secondary mt-1 text-sm">${relative.lockInfo.reason}</p>
+                    </div>
                 </div>
-                <h3 class="text-2xl font-bold font-serif text-brand-text-primary mb-2">Статья заблокирована</h3>
-                <p class="text-brand-text-secondary">${relative.lockInfo.reason}</p>
-              </div>
-            </div>`;
+            </div>
+        `;
+      };
+      
+      const getArticleBodyHtml = (relative) => {
+        // Если статья заблокирована, показываем только блок с уведомлением
+        if (relative.lockInfo?.locked) {
+            return renderLockNotice(relative);
+        }
+
+        // Иначе показываем обычное содержимое
+        return `
+            ${renderBanners(relative)}
+            <div class="md:border-t md:border-brand-border md:pt-8">
+                ${renderInfobox(relative)}
+                ${renderMarkdown(relative.content)}
+            </div>
+        `;
       };
 
       const getArticleViewHtml = (relative) => {
-        const isLocked = relative.lockInfo?.locked;
         return `
         <div class="h-full bg-brand-surface">
             <!-- Mobile Header -->
@@ -197,35 +207,30 @@
                 <button id="menu-button" class="p-2 -ml-2 mr-2 text-gray-600 hover:bg-gray-100 rounded-full">${ICONS.menu}</button>
                 <h2 class="text-lg font-semibold text-brand-text-primary truncate">FamiliPedia</h2>
             </header>
+            
             <div class="p-6 sm:p-8 md:p-12">
-              <div class="max-w-4xl mx-auto relative">
-                ${renderLockOverlay(relative)}
-                <div class="${isLocked ? 'blur-md pointer-events-none' : ''}">
-                  <div class="mb-8">
-                    <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold font-serif text-brand-text-primary">${relative.name}</h1>
-                  </div>
-                  ${renderBanners(relative)}
-                  <div class="md:border-t md:border-brand-border pt-8">
-                    ${renderInfobox(relative)}
-                    ${renderMarkdown(relative.content)}
-                  </div>
+              <div class="max-w-4xl mx-auto">
+                <div class="mb-8">
+                  <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold font-serif text-brand-text-primary">${relative.name}</h1>
                 </div>
+                
+                <!-- Тело статьи или блок блокировки -->
+                ${getArticleBodyHtml(relative)}
               </div>
             </div>
         </div>`;
       };
       
-      const getWelcomeScreenHtml = () => `...`; // Опущено для краткости
-      ICONS.welcomeBook = `<svg xmlns="http://www.w3.org/2000/svg" class="w-24 h-24 text-gray-200 mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>`;
-      const getWelcomeScreenHtmlFull = () => `
+      // --- ИСПРАВЛЕНО: Полная версия функции ---
+      const getWelcomeScreenHtml = () => `
         <div class="flex flex-col items-center justify-center h-full text-center p-8 bg-brand-surface">
             <div>${ICONS.welcomeBook}</div>
             <h2 class="text-4xl font-bold font-serif text-brand-text-primary mb-2">Welcome to FamiliPedia</h2>
             <p class="text-xl text-brand-text-secondary max-w-2xl mb-8 font-sans">Your personal space to cherish family stories. Select a relative from the list to begin.</p>
         </div>`;
       
-      const getSkeletonLoaderHtml = () => `...`; // Опущено для краткости
-      const getSkeletonLoaderHtmlFull = () => {
+      // --- ИСПРАВЛЕНО: Полная версия функции ---
+      const getSkeletonLoaderHtml = () => {
           const shimmer = (className) => `<div class="bg-gray-200 rounded ${className || ''} animate-pulse"></div>`;
           return `
             <div class="p-6 sm:p-8 md:p-12 h-full overflow-y-auto bg-brand-surface">
@@ -242,12 +247,12 @@
       const renderMainContent = () => {
         let newContentHtml;
         if (state.isLoading) {
-          newContentHtml = getSkeletonLoaderHtmlFull();
+          newContentHtml = getSkeletonLoaderHtml();
         } else if (state.selectedRelativeId) {
           const relative = state.relatives.find(r => r.id === state.selectedRelativeId);
-          newContentHtml = relative ? getArticleViewHtml(relative) : getWelcomeScreenHtmlFull();
+          newContentHtml = relative ? getArticleViewHtml(relative) : getWelcomeScreenHtml();
         } else {
-          newContentHtml = getWelcomeScreenHtmlFull();
+          newContentHtml = getWelcomeScreenHtml();
         }
 
         mainContentEl.innerHTML = newContentHtml;
@@ -256,7 +261,6 @@
             newContent.classList.add('animate-fade-in');
         }
 
-        // Re-attach listener for the new menu button
         menuButtonEl = document.getElementById('menu-button');
         if (menuButtonEl) {
             menuButtonEl.addEventListener('click', toggleSidebar);
@@ -273,11 +277,10 @@
           state.selectedRelativeId = id;
           state.isLoading = false;
           renderMainContent();
-          renderSidebar(); // Re-render sidebar to update active state
-        }, 250);
+          renderSidebar();
+        }, 200);
       };
 
-      // --- MOBILE SIDEBAR LOGIC ---
       const toggleSidebar = () => {
           const isOpen = sidebarEl.classList.contains('translate-x-0');
           if (isOpen) {
@@ -290,14 +293,12 @@
       };
 
       const attachListeners = () => {
-        // Search
         sidebarEl.addEventListener('input', e => {
           if (e.target.id === 'search-input') {
             state.searchTerm = e.target.value;
             renderSidebar();
           }
         });
-        // Select relative
         sidebarEl.addEventListener('click', e => {
           const link = e.target.closest('a');
           const li = link?.parentElement;
@@ -305,11 +306,10 @@
             e.preventDefault();
             handleSelectRelative(li.dataset.id);
             if (window.innerWidth < 768) {
-              toggleSidebar(); // Close sidebar on mobile after selection
+              toggleSidebar();
             }
           }
         });
-        // Close with overlay
         overlayEl.addEventListener('click', toggleSidebar);
       };
       
