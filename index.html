@@ -69,7 +69,6 @@
         searchTerm: '',
       };
 
-      // --- ИСПРАВЛЕНО: Полный код для всех иконок ---
       const ICONS = {
         bookOpen: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-brand-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>`,
         search: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-brand-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>`,
@@ -86,19 +85,19 @@
 
       function renderFullPage() {
         const item = state.items.find(i => i.id === state.selectedItemId);
+        // --- ИЗМЕНЕНО: Добавлен класс bg-brand-surface к <main> ---
         appContainer.innerHTML = `
           <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-30 ${document.body.dataset.sidebarOpen === 'true' ? '' : 'hidden'} md:hidden"></div>
           <aside id="sidebar" class="fixed top-0 left-0 w-80 bg-brand-sidebar flex flex-col h-full border-r border-black/10 z-40 transform ${document.body.dataset.sidebarOpen === 'true' ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out md:relative md:w-72 lg:w-80 md:translate-x-0 md:shrink-0">
             ${renderSidebarHtml()}
           </aside>
-          <main id="main-content" class="flex-1 h-screen relative overflow-y-auto">
+          <main id="main-content" class="flex-1 h-screen relative overflow-y-auto bg-brand-surface">
             ${renderMainContentHtml(item)}
           </main>`;
       }
 
       function renderSidebarHtml() {
         const filteredItems = state.items.filter(i => i.name.toLowerCase().includes(state.searchTerm.toLowerCase()));
-        
         const createListHtml = (items) => {
           if (!items || items.length === 0) return '<li class="text-sm text-gray-500 p-2">Ничего не найдено</li>';
           return items.map(item => {
@@ -108,28 +107,22 @@
             return `<li data-id="${item.id}"><a href="#${item.id}" class="block p-2.5 my-1 rounded-lg text-left w-full transition-colors duration-150 ${isActive ? activeClasses : inactiveClasses}"><span class="font-medium">${item.name}</span></a></li>`;
           }).join('');
         };
-
         const relativesHtml = createListHtml(filteredItems.filter(i => i.type === 'relative'));
         const eventsHtml = createListHtml(filteredItems.filter(i => i.type === 'event'));
-
         return `<div class="p-4 border-b border-black/10 flex items-center justify-between flex-shrink-0"><div class="flex items-center space-x-3">${ICONS.bookOpen}<h1 class="text-xl font-semibold text-brand-text-primary">FamiliPedia</h1></div></div>
                 <div class="p-4 flex-shrink-0"><div class="relative"><input type="text" placeholder="Search..." value="${state.searchTerm}" id="search-input" class="w-full pl-10 pr-4 py-2 bg-gray-100 text-brand-text-primary placeholder-brand-text-secondary border border-transparent rounded-lg focus:ring-2 focus:ring-brand-accent focus:outline-none focus:bg-white transition-all duration-300"><div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">${ICONS.search}</div></div></div>
                 <nav class="flex-1 overflow-y-auto px-4 pt-0">
-                  <details open class="mb-4">
-                    <summary class="flex items-center space-x-2 p-2 rounded-lg bg-gray-100 text-brand-text-primary"><span class="summary-arrow text-gray-500">▶</span><span>👨‍👩‍👧‍👦 Родственники</span></summary>
-                    <ul class="pt-2 pl-4">${relativesHtml}</ul>
-                  </details>
-                  <details open>
-                    <summary class="flex items-center space-x-2 p-2 rounded-lg bg-gray-100 text-brand-text-primary"><span class="summary-arrow text-gray-500">▶</span><span>🗓️ События</span></summary>
-                    <ul class="pt-2 pl-4">${eventsHtml}</ul>
-                  </details>
+                  <details open class="mb-4"><summary class="flex items-center space-x-2 p-2 rounded-lg bg-gray-100 text-brand-text-primary"><span class="summary-arrow text-gray-500">▶</span><span>👨‍👩‍👧‍👦 Родственники</span></summary><ul class="pt-2 pl-4">${relativesHtml}</ul></details>
+                  <details open><summary class="flex items-center space-x-2 p-2 rounded-lg bg-gray-100 text-brand-text-primary"><span class="summary-arrow text-gray-500">▶</span><span>🗓️ События</span></summary><ul class="pt-2 pl-4">${eventsHtml}</ul></details>
                 </nav>`;
       }
       
       function renderMainContentHtml(item) {
         const getMobileHeader = () => `<header class="p-4 border-b border-brand-border flex items-center md:hidden sticky top-0 bg-brand-surface/80 backdrop-blur-sm z-10"><button id="menu-button" class="p-2 -ml-2 mr-2 text-gray-600 hover:bg-gray-100 rounded-full">${ICONS.menu}</button><h2 class="text-lg font-semibold text-brand-text-primary truncate">FamiliPedia</h2></header>`;
+        
+        // --- ИЗМЕНЕНО: Удален класс bg-brand-surface отсюда ---
         if (!item) {
-          return `<div class="h-full bg-brand-surface">${getMobileHeader()}<div class="flex flex-col items-center justify-center h-full text-center p-8"><div>${ICONS.welcomeBook}</div><h2 class="text-4xl font-bold font-serif text-brand-text-primary mb-2">Welcome to FamiliPedia</h2><p class="text-xl text-brand-text-secondary max-w-2xl mb-8 font-sans">Your personal space to cherish family stories.</p></div></div>`;
+          return `<div class="h-full">${getMobileHeader()}<div class="flex flex-col items-center justify-center h-full text-center p-8"><div>${ICONS.welcomeBook}</div><h2 class="text-4xl font-bold font-serif text-brand-text-primary mb-2">Welcome to FamiliPedia</h2><p class="text-xl text-brand-text-secondary max-w-2xl mb-8 font-sans">Your personal space to cherish family stories.</p></div></div>`;
         }
 
         const renderArticleBody = () => {
@@ -149,14 +142,15 @@
               return `<div class="mb-6 sm:float-right sm:ml-6 sm:mb-6 w-full sm:w-64 md:w-72 lg:w-80 clear-right [shape-outside:margin-box] [shape-margin:1.5rem]"><aside class="border border-brand-border rounded-xl bg-gray-50/50 backdrop-blur-sm shadow-subtle overflow-hidden">${item.imageUrl ? `<img src="${item.imageUrl}" alt="${item.name}" class="w-full h-auto object-cover">` : ''}<div class="p-4 text-sm">${hasDetails ? `<dl class="space-y-3">${Object.entries(item.details).map(([key, value]) => `<div><dt class="font-semibold text-brand-text-secondary">${key}</dt><dd class="text-brand-text-primary mt-0.5">${Array.isArray(value) ? `<ul class="list-none pl-0">${value.map(v => `<li>${v}</li>`).join('')}</ul>` : value}</dd></div>`).join('')}</dl>` : ''}${shareLinkHtml}</div></aside></div>`;
           })();
           const markdownHtml = `<div class="prose prose-lg max-w-none text-brand-text-primary leading-relaxed font-serif selection:bg-brand-accent selection:text-white">${DOMPurify.sanitize(marked.parse(item.content))}</div>`;
-          return `${bannersHtml}<div class="md:border-t md:border-brand-border md:pt-8">${infoboxHtml}${markdownHtml}</div>`;
+          return `${bannersHtml}<div class="md:border-t md:border-brand-border md-pt-8">${infoboxHtml}${markdownHtml}</div>`;
         };
-        return `<div class="h-full bg-brand-surface animate-fade-in">${getMobileHeader()}<div class="p-6 sm:p-8 md:p-12"><div class="max-w-4xl mx-auto"><div class="mb-8"><h1 class="text-3xl md:text-4xl lg:text-5xl font-bold font-serif text-brand-text-primary">${item.name}</h1></div>${renderArticleBody()}</div></div></div>`;
+        // --- ИЗМЕНЕНО: Удален класс bg-brand-surface отсюда ---
+        return `<div class="h-full animate-fade-in">${getMobileHeader()}<div class="p-6 sm:p-8 md:p-12"><div class="max-w-4xl mx-auto"><div class="mb-8"><h1 class="text-3xl md:text-4xl lg:text-5xl font-bold font-serif text-brand-text-primary">${item.name}</h1></div>${renderArticleBody()}</div></div></div>`;
       }
       
       function toggleSidebar(forceClose = false) {
         document.body.dataset.sidebarOpen = forceClose ? 'false' : !(document.body.dataset.sidebarOpen === 'true');
-        renderFullPage(); // Перерисовываем всё для обновления классов
+        renderFullPage();
       }
 
       function handleUrlChange() {
@@ -206,9 +200,10 @@
         appContainer.addEventListener('input', (e) => {
           if (e.target.id === 'search-input') {
             state.searchTerm = e.target.value;
-            // Перерисовываем только сайдбар, сохраняя фокус
             document.getElementById('sidebar').innerHTML = renderSidebarHtml();
-            document.getElementById('search-input').focus();
+            const searchInput = document.getElementById('search-input');
+            searchInput.focus();
+            searchInput.setSelectionRange(state.searchTerm.length, state.searchTerm.length);
           }
         });
         
