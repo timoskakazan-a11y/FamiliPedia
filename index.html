@@ -21,8 +21,9 @@
       details[open] > summary .summary-arrow { transform: rotate(90deg); }
       @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
       .animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
-      .footnote-link { cursor: help; border-bottom: 1px dotted theme(colors.brand-accent); text-decoration: none; color: inherit; font-weight: inherit; }
-      .footnote-link:hover { background-color: rgba(255, 235, 153, 0.5); }
+      .footnote-link { cursor: help; text-decoration: none; color: inherit; font-weight: inherit; border-bottom: 1.5px solid black; background: linear-gradient(to top, rgba(255, 229, 100, 0.5) 60%, transparent 60%);}
+      .mention-link { cursor: pointer; color: theme(colors.blue.600); font-weight: 500; }
+      .mention-link:hover { text-decoration: underline; }
     </style>
     <script>
       tailwind.config = {
@@ -34,10 +35,11 @@
     </script>
 </head>
 <body class="bg-brand-bg antialiased">
-    <div id="app-container" class="relative min-h-screen md:flex md:flex-row font-sans text-brand-text-primary bg-brand-bg overflow-hidden">
-    </div>
-    <div id="footnote-popup" class="hidden absolute z-50 max-w-sm p-4 bg-white rounded-xl shadow-xl border border-gray-200 text-sm text-brand-text-primary">
-        <div id="footnote-content"></div>
+    <div id="app-container" class="relative min-h-screen md:flex md:flex-row font-sans text-brand-text-primary bg-brand-bg overflow-hidden"></div>
+    <div id="footnote-popup" class="hidden absolute z-50 max-w-sm p-4 bg-white rounded-xl shadow-xl border border-gray-200 text-sm text-brand-text-primary"></div>
+    <div id="mention-popup" class="hidden absolute z-50 max-w-xs p-4 bg-white rounded-xl shadow-xl border border-gray-200 text-sm text-center">
+        <p id="mention-text" class="mb-3"></p>
+        <button id="mention-confirm" class="w-full bg-brand-accent text-white font-semibold py-2 px-4 rounded-lg hover:bg-brand-accent-hover transition-colors">Перейти</button>
     </div>
 
     <script type="module">
@@ -68,26 +70,25 @@
       
       const appContainer = document.getElementById('app-container');
       const footnotePopup = document.getElementById('footnote-popup');
+      const mentionPopup = document.getElementById('mention-popup');
 
       function processCustomMarkdown(content) {
         if (!content) return '';
-        const footnoteRegex = /\[\^([^:]+):([^\]]+)\]/g;
-        return content.replace(footnoteRegex, (match, text, footnote) => {
+        content = content.replace(/\[\^([^:]+):([^\]]+)\]/g, (match, text, footnote) => {
           const encodedFootnote = DOMPurify.sanitize(footnote.trim()).replace(/"/g, '&quot;');
           return `<a href="#" class="footnote-link" data-footnote-content="${encodedFootnote}">${text.trim()}</a>`;
         });
+        content = content.replace(/\[@([^:]+):([^\]]+)\]/g, (match, text, id) => {
+          const safeText = DOMPurify.sanitize(text.trim());
+          const safeId = DOMPurify.sanitize(id.trim());
+          return `<a href="#" class="mention-link" data-mention-id="${safeId}" data-mention-name="${safeText}">${safeText}</a>`;
+        });
+        return content;
       }
 
       function renderFullPage() {
         const item = state.items.find(i => i.id === state.selectedItemId);
-        appContainer.innerHTML = `
-          <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-30 ${document.body.dataset.sidebarOpen === 'true' ? '' : 'hidden'} md:hidden"></div>
-          <aside id="sidebar" class="fixed top-0 left-0 w-80 bg-brand-sidebar flex flex-col h-full border-r border-black/10 z-40 transform ${document.body.dataset.sidebarOpen === 'true' ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out md:relative md:w-72 lg:w-80 md:translate-x-0 md:shrink-0">
-            ${renderSidebarHtml()}
-          </aside>
-          <main id="main-content" class="flex-1 h-screen relative overflow-y-auto bg-brand-surface">
-            ${renderMainContentHtml(item)}
-          </main>`;
+        appContainer.innerHTML = `<div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-30 ${document.body.dataset.sidebarOpen === 'true' ? '' : 'hidden'} md:hidden"></div><aside id="sidebar" class="fixed top-0 left-0 w-80 bg-brand-sidebar flex flex-col h-full border-r border-black/10 z-40 transform ${document.body.dataset.sidebarOpen === 'true' ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out md:relative md:w-72 lg:w-80 md:translate-x-0 md:shrink-0">${renderSidebarHtml()}</aside><main id="main-content" class="flex-1 h-screen relative overflow-y-auto bg-brand-surface">${renderMainContentHtml(item)}</main>`;
       }
 
       function renderSidebarHtml() {
@@ -114,12 +115,10 @@
         const renderArticleBody = () => {
           if (item.lockReason) return `<div class="border-t border-brand-border mt-8 pt-8"><div class="bg-gray-100 border border-gray-200 rounded-xl p-6 flex items-center space-x-5"><div class="shrink-0">${ICONS.lock}</div><div><h3 class="text-lg font-bold text-brand-text-primary font-serif">Просмотр статьи ограничен</h3><p class="text-brand-text-secondary mt-1 text-sm">${item.lockReason}</p></div></div></div>`;
           if (item.editingNotice) return `<div class="border-t border-brand-border mt-8 pt-8"><div class="bg-gray-100 border border-gray-200 rounded-xl p-6 flex items-center space-x-5"><div class="shrink-0">${ICONS.pencil}</div><div><h3 class="text-lg font-bold text-brand-text-primary font-serif">Статья в процессе редактирования</h3><p class="text-brand-text-secondary mt-1 text-sm">${item.editingNotice}</p></div></div></div>`;
-          
           let bannersHtml = '';
           if (item.neutralityBanner) bannersHtml += `<div class="flex items-start p-4 space-x-4 bg-yellow-100/80 text-yellow-800 border border-yellow-300/80 rounded-xl"><div class="shrink-0">${ICONS.warning}</div><p class="text-sm font-medium">${item.neutralityBanner}</p></div>`;
           if (item.unverifiedBanner) bannersHtml += `<div class="flex items-start mt-4 p-4 space-x-4 bg-blue-100/80 text-blue-800 border border-blue-200/80 rounded-xl"><div class="shrink-0">${ICONS.info}</div><p class="text-sm font-medium">${item.unverifiedBanner}</p></div>`;
           if (bannersHtml) bannersHtml = `<div class="mb-8">${bannersHtml}</div>`;
-
           const infoboxHtml = (() => {
               if (!item.details && !item.imageUrl) return '';
               const hasDetails = item.details && Object.keys(item.details).length > 0;
@@ -158,7 +157,7 @@
           window.history.replaceState(null, '', '#' + state.selectedItemId);
         }
         renderFullPage();
-
+        
         document.addEventListener('click', (e) => {
             const app = e.target.closest('#app-container');
             if (app) {
@@ -170,19 +169,40 @@
               if (e.target.id === 'sidebar-overlay') { toggleSidebar(true); return; }
             }
             const footnoteLink = e.target.closest('.footnote-link');
-            const isPopupClick = e.target.closest('#footnote-popup');
+            const mentionLink = e.target.closest('.mention-link');
+            const isPopupClick = e.target.closest('#footnote-popup, #mention-popup');
+            if (!footnoteLink && !mentionLink && !isPopupClick) {
+              footnotePopup.classList.add('hidden');
+              mentionPopup.classList.add('hidden');
+            }
             if (footnoteLink) {
               e.preventDefault();
+              mentionPopup.classList.add('hidden');
               const content = footnoteLink.dataset.footnoteContent;
-              document.getElementById('footnote-content').innerHTML = content;
+              footnotePopup.innerHTML = content;
               const rect = footnoteLink.getBoundingClientRect();
               footnotePopup.style.left = `${rect.left + window.scrollX}px`;
               footnotePopup.style.top = `${rect.bottom + window.scrollY + 8}px`;
               footnotePopup.classList.remove('hidden');
               return;
             }
-            if (!isPopupClick) {
+            if (mentionLink) {
+              e.preventDefault();
               footnotePopup.classList.add('hidden');
+              const name = mentionLink.dataset.mentionName;
+              const targetId = mentionLink.dataset.mentionId;
+              document.getElementById('mention-text').innerHTML = `Перейти к статье о <strong>${name}</strong>?`;
+              document.getElementById('mention-confirm').dataset.targetId = targetId;
+              const rect = mentionLink.getBoundingClientRect();
+              mentionPopup.style.left = `${rect.left + window.scrollX}px`;
+              mentionPopup.style.top = `${rect.bottom + window.scrollY + 8}px`;
+              mentionPopup.classList.remove('hidden');
+              return;
+            }
+            if (e.target.id === 'mention-confirm') {
+              const targetId = e.target.dataset.targetId;
+              window.location.hash = targetId;
+              mentionPopup.classList.add('hidden');
             }
         });
 
