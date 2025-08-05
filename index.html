@@ -21,9 +21,25 @@
       details[open] > summary .summary-arrow { transform: rotate(90deg); }
       @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
       .animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
-      .footnote-link { cursor: help; text-decoration: none; color: inherit; font-weight: inherit; border-bottom: 1.5px solid black; background: linear-gradient(to top, rgba(255, 229, 100, 0.5) 60%, transparent 60%);}
-      .mention-link { cursor: pointer; color: theme(colors.blue.600); font-weight: 500; }
-      .mention-link:hover { text-decoration: underline; }
+      
+      /* --- СТИЛИ ДЛЯ СНОСОК --- */
+      .footnote-link {
+        cursor: help;
+        text-decoration: none;
+        color: inherit;
+        font-weight: inherit;
+        border-bottom: 1.5px solid black;
+        background: linear-gradient(to top, rgba(255, 229, 100, 0.5) 60%, transparent 60%);
+      }
+      /* --- СТИЛИ ДЛЯ УПОМИНАНИЙ --- */
+      .mention-link {
+        cursor: pointer;
+        color: theme(colors.blue.600);
+        font-weight: 500;
+      }
+      .mention-link:hover {
+        text-decoration: underline;
+      }
     </style>
     <script>
       tailwind.config = {
@@ -35,7 +51,10 @@
     </script>
 </head>
 <body class="bg-brand-bg antialiased">
-    <div id="app-container" class="relative min-h-screen md:flex md:flex-row font-sans text-brand-text-primary bg-brand-bg overflow-hidden"></div>
+    <div id="app-container" class="relative min-h-screen md:flex md:flex-row font-sans text-brand-text-primary bg-brand-bg overflow-hidden">
+        <!-- Содержимое рендерится здесь -->
+    </div>
+    
     <div id="footnote-popup" class="hidden absolute z-50 max-w-sm p-4 bg-white rounded-xl shadow-xl border border-gray-200 text-sm text-brand-text-primary"></div>
     <div id="mention-popup" class="hidden absolute z-50 max-w-xs p-4 bg-white rounded-xl shadow-xl border border-gray-200 text-sm text-center">
         <p id="mention-text" class="mb-3"></p>
@@ -157,7 +176,7 @@
           window.history.replaceState(null, '', '#' + state.selectedItemId);
         }
         renderFullPage();
-        
+
         document.addEventListener('click', (e) => {
             const app = e.target.closest('#app-container');
             if (app) {
