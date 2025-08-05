@@ -67,12 +67,8 @@
 </head>
 <body class="bg-brand-bg antialiased">
     
-    <div id="app-container" class="relative min-h-screen md:flex md:flex-row font-sans text-brand-text-primary bg-brand-bg overflow-hidden">
-        <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-30 hidden md:hidden"></div>
-        <aside id="sidebar" class="fixed top-0 left-0 w-80 bg-brand-sidebar flex flex-col h-full border-r border-black/10 z-40
-                                   transform -translate-x-full transition-transform duration-300 ease-in-out
-                                   md:relative md:w-72 lg:w-80 md:translate-x-0 md:shrink-0"></aside>
-        <main id="main-content" class="flex-1 h-screen relative overflow-y-auto"></main>
+    <div id="app-container">
+        <!-- Содержимое будет рендериться здесь через JavaScript -->
     </div>
 
     <script type="module">
@@ -99,16 +95,16 @@
       const appContainer = document.getElementById('app-container');
 
       function render() {
-        // Рендерим все приложение за один раз
+        const relative = state.relatives.find(r => r.id === state.selectedRelativeId);
         appContainer.innerHTML = `
-          <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-30 ${window.innerWidth < 768 && document.body.dataset.sidebarOpen === 'true' ? '' : 'hidden'} md:hidden"></div>
+          <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-30 ${document.body.dataset.sidebarOpen === 'true' ? '' : 'hidden'} md:hidden"></div>
           <aside id="sidebar" class="fixed top-0 left-0 w-80 bg-brand-sidebar flex flex-col h-full border-r border-black/10 z-40
-                                     transform ${window.innerWidth < 768 && document.body.dataset.sidebarOpen === 'true' ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out
+                                     transform ${document.body.dataset.sidebarOpen === 'true' ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out
                                      md:relative md:w-72 lg:w-80 md:translate-x-0 md:shrink-0">
             ${getSidebarHtml()}
           </aside>
           <main id="main-content" class="flex-1 h-screen relative overflow-y-auto">
-            ${getMainContentHtml()}
+            ${getMainContentHtml(relative)}
           </main>
         `;
       }
@@ -117,30 +113,16 @@
         const filteredRelatives = state.relatives
           .filter(r => r.name.toLowerCase().includes(state.searchTerm.toLowerCase()))
           .sort((a, b) => a.name.localeCompare(b.name));
-        
         const relativesListHtml = filteredRelatives.map(relative => {
           const isActive = relative.id === state.selectedRelativeId;
           const activeClasses = 'bg-brand-accent text-white shadow-md shadow-blue-500/30';
           const inactiveClasses = 'text-brand-text-primary hover:bg-black/5';
           return `<li data-id="${relative.id}"><a href="#" class="block p-2.5 my-1 rounded-lg text-left w-full transition-colors duration-150 ${isActive ? activeClasses : inactiveClasses}"><span class="font-medium">${relative.name}</span></a></li>`;
         }).join('');
-
-        return `
-          <div class="p-4 border-b border-black/10 flex items-center justify-between flex-shrink-0">
-            <div class="flex items-center space-x-3">${ICONS.bookOpen}<h1 class="text-xl font-semibold text-brand-text-primary">FamiliPedia</h1></div>
-          </div>
-          <div class="p-4 flex-shrink-0">
-            <div class="relative">
-              <input type="text" placeholder="Search..." value="${state.searchTerm}" id="search-input" class="w-full pl-10 pr-4 py-2 bg-gray-100 text-brand-text-primary placeholder-brand-text-secondary border border-transparent rounded-lg focus:ring-2 focus:ring-brand-accent focus:outline-none focus:bg-white transition-all duration-300">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">${ICONS.search}</div>
-            </div>
-          </div>
-          <nav class="flex-1 overflow-y-auto px-4 pt-0"><ul id="relatives-list">${relativesListHtml}</ul></nav>`;
+        return `<div class="p-4 border-b border-black/10 flex items-center justify-between flex-shrink-0"><div class="flex items-center space-x-3">${ICONS.bookOpen}<h1 class="text-xl font-semibold text-brand-text-primary">FamiliPedia</h1></div></div><div class="p-4 flex-shrink-0"><div class="relative"><input type="text" placeholder="Search..." value="${state.searchTerm}" id="search-input" class="w-full pl-10 pr-4 py-2 bg-gray-100 text-brand-text-primary placeholder-brand-text-secondary border border-transparent rounded-lg focus:ring-2 focus:ring-brand-accent focus:outline-none focus:bg-white transition-all duration-300"><div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">${ICONS.search}</div></div></div><nav class="flex-1 overflow-y-auto px-4 pt-0"><ul id="relatives-list">${relativesListHtml}</ul></nav>`;
       }
 
-      function getMainContentHtml() {
-        const relative = state.relatives.find(r => r.id === state.selectedRelativeId);
-        
+      function getMainContentHtml(relative) {
         const getMobileHeader = () => `<header class="p-4 border-b border-brand-border flex items-center md:hidden sticky top-0 bg-brand-surface/80 backdrop-blur-sm z-10"><button id="menu-button" class="p-2 -ml-2 mr-2 text-gray-600 hover:bg-gray-100 rounded-full">${ICONS.menu}</button><h2 class="text-lg font-semibold text-brand-text-primary truncate">FamiliPedia</h2></header>`;
 
         if (!relative) {
@@ -148,13 +130,24 @@
         }
 
         const renderArticleBody = () => {
-          if (relative.lockInfo?.locked) {
-            return `<div class="border-t border-brand-border mt-8 pt-8"><div class="bg-gray-100 border border-gray-200 rounded-xl p-6 flex items-center space-x-5"><div class="shrink-0">${ICONS.lock}</div><div><h3 class="text-lg font-bold text-brand-text-primary font-serif">Просмотр статьи ограничен</h3><p class="text-brand-text-secondary mt-1 text-sm">${relative.lockInfo.reason}</p></div></div></div>`;
+          // --- ИЗМЕНЕНО: Проверяем lockReason ---
+          if (relative.lockReason) {
+            return `<div class="border-t border-brand-border mt-8 pt-8"><div class="bg-gray-100 border border-gray-200 rounded-xl p-6 flex items-center space-x-5"><div class="shrink-0">${ICONS.lock}</div><div><h3 class="text-lg font-bold text-brand-text-primary font-serif">Просмотр статьи ограничен</h3><p class="text-brand-text-secondary mt-1 text-sm">${relative.lockReason}</p></div></div></div>`;
           }
-          const bannersHtml = (relative.banners?.length) ? `<div class="space-y-4 mb-8">${relative.banners.map(banner => {
-              const config = banner.type === 'neutrality' ? {i:ICONS.warning,b:'bg-yellow-100/80',t:'text-yellow-800',d:'border-yellow-300/80'} : {i:ICONS.info,b:'bg-blue-100/80',t:'text-blue-800',d:'border-blue-200/80'};
-              return `<div class="flex items-start p-4 space-x-4 ${config.b} ${config.t} border ${config.d} rounded-xl"><div class="shrink-0">${config.i}</div><p class="text-sm font-medium">${banner.text}</p></div>`;
-          }).join('')}</div>` : '';
+          
+          let bannersHtml = '';
+          // --- ИЗМЕНЕНО: Проверяем neutralityBanner ---
+          if (relative.neutralityBanner) {
+            bannersHtml += `<div class="flex items-start p-4 space-x-4 bg-yellow-100/80 text-yellow-800 border border-yellow-300/80 rounded-xl"><div class="shrink-0">${ICONS.warning}</div><p class="text-sm font-medium">${relative.neutralityBanner}</p></div>`;
+          }
+          // --- ИЗМЕНЕНО: Проверяем unverifiedBanner ---
+          if (relative.unverifiedBanner) {
+            bannersHtml += `<div class="flex items-start mt-4 p-4 space-x-4 bg-blue-100/80 text-blue-800 border border-blue-200/80 rounded-xl"><div class="shrink-0">${ICONS.info}</div><p class="text-sm font-medium">${relative.unverifiedBanner}</p></div>`;
+          }
+          if(bannersHtml) {
+            bannersHtml = `<div class="mb-8">${bannersHtml}</div>`;
+          }
+
           const infoboxHtml = (() => {
               if (!relative.details && !relative.imageUrl) return '';
               const hasDetails = relative.details && Object.keys(relative.details).length > 0;
@@ -174,11 +167,10 @@
         } else {
             document.body.dataset.sidebarOpen = isOpen ? 'false' : 'true';
         }
-        render(); // Перерисовываем приложение, чтобы обновить классы
+        render();
       }
 
       appContainer.addEventListener('click', (e) => {
-        // Клик по пункту меню
         const link = e.target.closest('li[data-id] a');
         if (link) {
           e.preventDefault();
@@ -187,19 +179,15 @@
               state.selectedRelativeId = id;
               render();
           }
-          if (window.innerWidth < 768) {
-            toggleSidebar(true);
-          }
+          if (window.innerWidth < 768) toggleSidebar(true);
           return;
         }
 
-        // Клик по кнопке "бургер"
         if (e.target.closest('#menu-button')) {
           toggleSidebar();
           return;
         }
         
-        // Клик по оверлею
         if (e.target.id === 'sidebar-overlay') {
           toggleSidebar(true);
           return;
