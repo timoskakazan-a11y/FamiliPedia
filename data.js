@@ -1,3 +1,19 @@
+// --- ИНСТРУКЦИЯ ПО СОЗДАНИЮ КОНТЕНТА ---
+//
+// 1. ВНЕШНИЕ ССЫЛКИ:
+//    Используйте стандартный синтаксис Markdown: [текст ссылки](https://example.com)
+//    Пример: Посетите [сады Кью](https://www.kew.org/)
+//
+// 2. ССЫЛКИ НА ДРУГИЕ СТАТЬИ (ВНУТРЕННИЕ):
+//    Используйте тот же синтаксис, но в URL укажите # и ID статьи: [имя человека](#rel-2)
+//    ID можно посмотреть в самом объекте статьи (например, id: '2' для Сэма -> #rel-2).
+//    Для событий ID будет с префиксом evt-, например, #evt-1.
+//    Пример: ... как и подобает [Сэмюэлу Торнтону](#rel-2).
+//
+// 3. ВСплывающие СНОСКИ:
+//    Используйте специальный синтаксис: [^слово в тексте:текст для всплывающего окна]
+//    Пример: Ее сад был ее [^убежищем:Место, где она чувствовала себя в полной безопасности.]
+
 // --- МАССИВ С РОДСТВЕННИКАМИ ---
 const relativesData = [
     {
@@ -9,11 +25,9 @@ const relativesData = [
         content: `Eleanora Vance was the matriarch of our family, known for her incredible resilience and boundless kindness. Born in a small village, she dreamed of seeing the world, a dream she fulfilled by traveling to over 30 countries throughout her life.
 
 ## A Life of Passion
-Her garden was her sanctuary, where she grew the most beautiful roses in the county.[^1] She taught us the value of patience, hard work, and that a home-cooked meal could solve almost any problem. Her stories, often told around the dinner table, are treasures we will carry with us forever.
+Her garden was her [^убежищем:Место, где она чувствовала себя в полной безопасности и могла заниматься любимым делом.], где она выращивала самые красивые розы в округе. Она научила нас ценить терпение, упорный труд и то, что домашняя еда может решить почти любую проблему. Ее истории, которые часто рассказывались за обеденным столом, — это сокровища, которые мы будем хранить вечно.
 
-She always recommended visiting the [Kew Gardens in London](https://www.kew.org/) for botanical inspiration.
-
-[^1]: She even won the local "Best Rose" competition three years in a row, from 1988 to 1990.`,
+Она всегда рекомендовала посетить знаменитые [сады Кью в Лондоне](https://www.kew.org/) для ботанического вдохновения.`,
         details: {
             'Родилась': '15 марта 1928 г.',
             'Умерла': '22 июля 2018 г.',
@@ -31,7 +45,7 @@ She always recommended visiting the [Kew Gardens in London](https://www.kew.org/
         birthDate: 'October 5, 1952',
         deathDate: '',
         imageUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=800&auto=format&fit=crop',
-        content: `Samuel, or Sam as everyone knows him, is a master craftsman and storyteller. He can build anything from a sturdy bookshelf to an intricate birdhouse with his own two hands. His workshop is a magical place, filled with the smell of sawdust and the sound of his cheerful whistling.`,
+        content: `Samuel, or Sam as everyone knows him, is a master craftsman and storyteller. He can build anything from a sturdy bookshelf to an intricate birdhouse with his own two hands. His workshop is a magical place, filled with the smell of sawdust and the sound of his cheerful whistling.\n\nHe served as a firefighter for 30 years, a chapter of his life filled with bravery and service to his community. Now retired, he spends his days fishing at the lake, spoiling his grandchildren, and perfecting his famous barbecue sauce recipe.`,
         details: {
             'Родился': '5 октября 1952 г.',
             'Род деятельности': 'Мастер на все руки, Пожарный (в отставке)',
@@ -92,7 +106,7 @@ const eventsData = [
         content: `Это было трагическое событие, которое сильно повлияло на всю семью. Старый дом, в котором выросло не одно поколение, был уничтожен огнем из-за неисправной проводки.
 
 ## Последствия
-К счастью, никто не пострадал, но были утеряны многие семейные реликвии и фотографии. Это событие сплотило семью и заставило всех осознать ценность нематериальных вещей и взаимной поддержки. Сэмюэл Торнтон, будучи пожарным, координировал действия до приезда своей бригады, проявив настоящий героизм.`,
+К счастью, никто не пострадал, но были утеряны многие семейные реликвии и фотографии. Это событие сплотило семью и заставило всех осознать ценность нематериальных вещей и взаимной поддержки. [Сэмюэл Торнтон](#rel-2), будучи пожарным, координировал действия до приезда своей бригады, проявив настоящий героизм.`,
         details: {
             'Дата': '12 мая 1995 г.',
             'Место': 'г. Бруксвилл, ул. Вязовая, 14',
@@ -111,7 +125,7 @@ const eventsData = [
         imageUrl: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?q=80&w=800&auto=format&fit=crop',
         content: `Впервые за почти 10 лет вся семья собралась вместе, чтобы отпраздновать 70-летие Сэмюэла Торнтона. Мероприятие проходило в загородном доме у озера и длилось три дня.
 
-Было организовано множество мероприятий, включая совместную рыбалку, конкурс на лучший шашлык и вечер историй у костра, где каждый делился своими воспоминаниями. Элеонора Вэнс, даже будучи в преклонном возрасте, рассказала несколько своих знаменитых историй о путешествиях, которые слушали и взрослые, и дети.`,
+Было организовано множество мероприятий, включая совместную рыбалку, конкурс на лучший шашлык и вечер историй у костра, где каждый делился своими воспоминаниями. [Элеонора Вэнс](#rel-1), даже будучи в преклонном возрасте, рассказала несколько своих знаменитых историй о путешествиях, которые слушали и взрослые, и дети.`,
         details: {
             'Дата': '4-6 июля 2022 г.',
             'Место': 'Загородный дом у озера "Чистое"',
