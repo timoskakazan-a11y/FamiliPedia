@@ -56,6 +56,7 @@
         }
         #main-content {
           height: auto;
+          /* Ensure main content is at least the height of the screen to avoid empty space */
           min-height: 100vh; 
         }
       }
@@ -108,7 +109,6 @@
       import { marked } from 'marked';
       import DOMPurify from 'dompurify';
 
-      // --- APPLICATION STATE ---
       const state = {
         relatives: relativesData,
         selectedRelativeId: null,
@@ -116,21 +116,13 @@
         isLoading: true,
       };
 
-      // --- DOM ELEMENT REFERENCES ---
       const sidebarEl = document.getElementById('sidebar');
       const mainContentEl = document.getElementById('main-content');
 
-      // --- ICON SVGs ---
       const ICONS = {
         bookOpen: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-brand-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>`,
         search: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-brand-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>`,
-        // --- НОВЫЕ ИКОНКИ ---
-        warning: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`,
-        info: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`,
-        lock: `<svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>`,
       };
-
-      // --- TEMPLATE GENERATION FUNCTIONS ---
 
       const renderSidebar = () => {
         const filteredRelatives = state.relatives
@@ -194,69 +186,19 @@
         return `<div class="prose prose-lg max-w-none text-brand-text-primary leading-relaxed font-serif selection:bg-brand-accent selection:text-white">${sanitizedHtml}</div>`;
       };
 
-      // --- НОВАЯ ФУНКЦИЯ для рендеринга плашек ---
-      const renderBanners = (relative) => {
-        if (!relative.banners || relative.banners.length === 0) return '';
-        
-        const bannersHtml = relative.banners.map(banner => {
-            let icon = ICONS.info;
-            let bgColor = 'bg-blue-100/80';
-            let textColor = 'text-blue-800';
-            let borderColor = 'border-blue-200/80';
-
-            if (banner.type === 'neutrality') {
-                icon = ICONS.warning;
-                bgColor = 'bg-yellow-100/80';
-                textColor = 'text-yellow-800';
-                borderColor = 'border-yellow-300/80';
-            }
-
-            return `
-                <div class="flex items-start p-4 space-x-4 ${bgColor} ${textColor} border ${borderColor} rounded-xl">
-                    <div class="shrink-0">${icon}</div>
-                    <p class="text-sm font-medium">${banner.text}</p>
-                </div>
-            `;
-        }).join('');
-
-        return `<div class="space-y-4 mb-8">${bannersHtml}</div>`;
-      };
-      
-      // --- НОВАЯ ФУНКЦИЯ для рендеринга экрана блокировки ---
-      const renderLockOverlay = (relative) => {
-        if (!relative.lockInfo?.locked) return '';
-
-        return `
-            <div class="absolute inset-0 bg-white/70 backdrop-blur-sm flex flex-col items-center justify-center text-center p-8 z-10 rounded-2xl">
-                <div class="text-gray-400 mb-4">${ICONS.lock}</div>
-                <h3 class="text-2xl font-bold text-brand-text-primary mb-2">Статья заблокирована</h3>
-                <p class="max-w-md text-brand-text-secondary">${relative.lockInfo.reason}</p>
-            </div>
-        `;
-      };
-
-      const getArticleViewHtml = (relative) => {
-        const isLocked = relative.lockInfo?.locked;
-        const contentWrapperClass = isLocked ? 'blur-sm pointer-events-none' : '';
-
-        return `
+      const getArticleViewHtml = (relative) => `
         <div class="p-6 sm:p-8 md:p-12 h-full overflow-y-auto bg-brand-surface">
-          <div class="max-w-4xl mx-auto relative">
-            ${renderLockOverlay(relative)}
-            <div class="${contentWrapperClass}">
-              <div class="mb-8">
-                <h1 class="text-4xl md:text-5xl font-bold font-serif text-brand-text-primary">${relative.name}</h1>
-              </div>
-              ${renderBanners(relative)}
-              <div class="border-t border-brand-border pt-8">
-                ${renderInfobox(relative)}
-                ${renderMarkdown(relative.content)}
-              </div>
+          <div class="max-w-4xl mx-auto">
+            <div class="mb-8">
+              <h1 class="text-4xl md:text-5xl font-bold font-serif text-brand-text-primary">${relative.name}</h1>
+            </div>
+            <div class="border-t border-brand-border pt-8">
+              ${renderInfobox(relative)}
+              ${renderMarkdown(relative.content)}
             </div>
           </div>
         </div>
       `;
-      };
       
       const getWelcomeScreenHtml = () => `
         <div class="flex flex-col items-center justify-center h-full text-center p-8 bg-brand-surface">
@@ -279,8 +221,6 @@
                 </div>
             </div>`;
       };
-      
-      // --- RENDER & LOGIC FUNCTIONS ---
       
       const renderMainContent = () => {
         let newContentHtml;
@@ -336,7 +276,6 @@
           state.selectedRelativeId = id;
           state.isLoading = false;
           renderMainContent();
-          // Обновляем список, чтобы правильно отобразить активный элемент
           updateSidebarList();
         }, 250);
       };
@@ -348,17 +287,19 @@
             updateSidebarList();
           }
         });
+
         sidebarEl.addEventListener('click', e => {
           const link = e.target.closest('a');
-          const li = link?.parentElement;
-          if (li && li.dataset.id) {
-            e.preventDefault();
-            handleSelectRelative(li.dataset.id);
+          if (link) {
+            const li = link.parentElement;
+            if (li && li.dataset.id) {
+              e.preventDefault();
+              handleSelectRelative(li.dataset.id);
+            }
           }
         });
       };
       
-      // --- INITIALIZATION ---
       const init = () => {
         state.relatives.forEach(relative => {
           if (relative.imageUrl) new Image().src = relative.imageUrl;
