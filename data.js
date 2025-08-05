@@ -75,7 +75,7 @@ She always recommended visiting the [Kew Gardens in London](https://www.kew.org/
             'Контакты': ['ВКонтакте: @idplnschr08']
         },
         // --- НОВАЯ ПРОСТАЯ СТРУКТУРА ---
-        lockReason: '',
+        lockReason: 'Статья временно заблокирована из-за споров о точности представленных фактов. Редакция приняла решение прекратить обновление фактов, новостей и терминов в этой статье',
         neutralityBanner: '',
         unverifiedBanner: ''
     }
