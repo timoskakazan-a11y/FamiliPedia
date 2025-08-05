@@ -86,11 +86,6 @@
         searchTerm: '',
       };
 
-      const sidebarEl = document.getElementById('sidebar');
-      const mainContentEl = document.getElementById('main-content');
-      const overlayEl = document.getElementById('sidebar-overlay');
-      let menuButtonEl;
-
       const ICONS = {
         bookOpen: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-brand-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>`,
         search: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-brand-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>`,
@@ -100,8 +95,25 @@
         menu: `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>`,
         welcomeBook: `<svg xmlns="http://www.w3.org/2000/svg" class="w-24 h-24 text-gray-200 mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>`
       };
+      
+      const appContainer = document.getElementById('app-container');
 
-      const renderSidebar = () => {
+      function render() {
+        // Рендерим все приложение за один раз
+        appContainer.innerHTML = `
+          <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-30 ${window.innerWidth < 768 && document.body.dataset.sidebarOpen === 'true' ? '' : 'hidden'} md:hidden"></div>
+          <aside id="sidebar" class="fixed top-0 left-0 w-80 bg-brand-sidebar flex flex-col h-full border-r border-black/10 z-40
+                                     transform ${window.innerWidth < 768 && document.body.dataset.sidebarOpen === 'true' ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out
+                                     md:relative md:w-72 lg:w-80 md:translate-x-0 md:shrink-0">
+            ${getSidebarHtml()}
+          </aside>
+          <main id="main-content" class="flex-1 h-screen relative overflow-y-auto">
+            ${getMainContentHtml()}
+          </main>
+        `;
+      }
+
+      function getSidebarHtml() {
         const filteredRelatives = state.relatives
           .filter(r => r.name.toLowerCase().includes(state.searchTerm.toLowerCase()))
           .sort((a, b) => a.name.localeCompare(b.name));
@@ -110,17 +122,10 @@
           const isActive = relative.id === state.selectedRelativeId;
           const activeClasses = 'bg-brand-accent text-white shadow-md shadow-blue-500/30';
           const inactiveClasses = 'text-brand-text-primary hover:bg-black/5';
-
-          return `
-            <li data-id="${relative.id}">
-              <a href="#" class="block p-2.5 my-1 rounded-lg text-left w-full transition-colors duration-150 ${isActive ? activeClasses : inactiveClasses}">
-                <span class="font-medium">${relative.name}</span>
-              </a>
-            </li>
-          `;
+          return `<li data-id="${relative.id}"><a href="#" class="block p-2.5 my-1 rounded-lg text-left w-full transition-colors duration-150 ${isActive ? activeClasses : inactiveClasses}"><span class="font-medium">${relative.name}</span></a></li>`;
         }).join('');
 
-        sidebarEl.innerHTML = `
+        return `
           <div class="p-4 border-b border-black/10 flex items-center justify-between flex-shrink-0">
             <div class="flex items-center space-x-3">${ICONS.bookOpen}<h1 class="text-xl font-semibold text-brand-text-primary">FamiliPedia</h1></div>
           </div>
@@ -130,166 +135,90 @@
               <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">${ICONS.search}</div>
             </div>
           </div>
-          <nav class="flex-1 overflow-y-auto px-4 pt-0"><ul id="relatives-list">${relativesListHtml}</ul></nav>
-        `;
-      };
-      
-      const renderInfobox = (relative) => {
-          if (!relative.details && !relative.imageUrl) return '';
-          const hasDetails = relative.details && Object.keys(relative.details).length > 0;
-          return `
-              <div class="mb-6 sm:float-right sm:ml-6 sm:mb-6 w-full sm:w-64 md:w-72 lg:w-80 clear-right [shape-outside:margin-box] [shape-margin:1.5rem]">
-                  <aside class="border border-brand-border rounded-xl bg-gray-50/50 backdrop-blur-sm shadow-subtle overflow-hidden">
-                      ${relative.imageUrl ? `<img src="${relative.imageUrl}" alt="${relative.name}" class="w-full h-auto object-cover">` : ''}
-                      ${hasDetails ? `<div class="p-4 text-sm"><dl class="space-y-3">${Object.entries(relative.details).map(([key, value]) => `
-                          <div><dt class="font-semibold text-brand-text-secondary">${key}</dt><dd class="text-brand-text-primary mt-0.5">${Array.isArray(value) ? `<ul class="list-none pl-0">${value.map(item => `<li>${item}</li>`).join('')}</ul>` : value}</dd></div>`).join('')}</dl></div>` : ''}
-                  </aside>
-              </div>`;
-      };
-      
-      const renderMarkdown = (content) => {
-        marked.use({ gfm: true, breaks: false });
-        return `<div class="prose prose-lg max-w-none text-brand-text-primary leading-relaxed font-serif selection:bg-brand-accent selection:text-white">${DOMPurify.sanitize(marked.parse(content))}</div>`;
-      };
-      
-      const renderBanners = (relative) => {
-        if (!relative.banners?.length) return '';
-        return `<div class="space-y-4 mb-8">${relative.banners.map(banner => {
-            const config = banner.type === 'neutrality' 
-              ? { icon: ICONS.warning, bg: 'bg-yellow-100/80', text: 'text-yellow-800', border: 'border-yellow-300/80' }
-              : { icon: ICONS.info, bg: 'bg-blue-100/80', text: 'text-blue-800', border: 'border-blue-200/80' };
-            return `<div class="flex items-start p-4 space-x-4 ${config.bg} ${config.text} border ${config.border} rounded-xl"><div class="shrink-0">${config.icon}</div><p class="text-sm font-medium">${banner.text}</p></div>`;
-        }).join('')}</div>`;
-      };
-      
-      const renderLockNotice = (relative) => {
-        if (!relative.lockInfo?.locked) return '';
-        return `
-            <div class="border-t border-brand-border mt-8 pt-8">
-                <div class="bg-gray-100 border border-gray-200 rounded-xl p-6 flex items-center space-x-5">
-                    <div class="shrink-0">${ICONS.lock}</div>
-                    <div>
-                        <h3 class="text-lg font-bold text-brand-text-primary font-serif">Просмотр статьи ограничен</h3>
-                        <p class="text-brand-text-secondary mt-1 text-sm">${relative.lockInfo.reason}</p>
-                    </div>
-                </div>
-            </div>
-        `;
-      };
-      
-      const getArticleBodyHtml = (relative) => {
-        if (relative.lockInfo?.locked) return renderLockNotice(relative);
-        return `
-            ${renderBanners(relative)}
-            <div class="md:border-t md:border-brand-border md:pt-8">
-                ${renderInfobox(relative)}
-                ${renderMarkdown(relative.content)}
-            </div>
-        `;
-      };
+          <nav class="flex-1 overflow-y-auto px-4 pt-0"><ul id="relatives-list">${relativesListHtml}</ul></nav>`;
+      }
 
-      const getArticleViewHtml = (relative) => {
-        return `
-        <div class="h-full bg-brand-surface">
-            <header class="p-4 border-b border-brand-border flex items-center md:hidden sticky top-0 bg-brand-surface/80 backdrop-blur-sm z-10">
-                <button id="menu-button" class="p-2 -ml-2 mr-2 text-gray-600 hover:bg-gray-100 rounded-full">${ICONS.menu}</button>
-                <h2 class="text-lg font-semibold text-brand-text-primary truncate">FamiliPedia</h2>
-            </header>
-            <div class="p-6 sm:p-8 md:p-12"><div class="max-w-4xl mx-auto">
-                <div class="mb-8"><h1 class="text-3xl md:text-4xl lg:text-5xl font-bold font-serif text-brand-text-primary">${relative.name}</h1></div>
-                ${getArticleBodyHtml(relative)}
-            </div></div>
-        </div>`;
-      };
-      
-      const getWelcomeScreenHtml = () => {
-        return `
-        <div class="flex flex-col items-center justify-center h-full text-center p-8 bg-brand-surface">
-            <header class="p-4 border-b border-brand-border flex items-center md:hidden sticky top-0 bg-brand-surface/80 backdrop-blur-sm z-10">
-                <button id="menu-button" class="p-2 -ml-2 mr-2 text-gray-600 hover:bg-gray-100 rounded-full">${ICONS.menu}</button>
-                <h2 class="text-lg font-semibold text-brand-text-primary truncate">FamiliPedia</h2>
-            </header>
-            <div class="flex-1 flex flex-col items-center justify-center">
-              <div>${ICONS.welcomeBook}</div>
-              <h2 class="text-4xl font-bold font-serif text-brand-text-primary mb-2">Welcome to FamiliPedia</h2>
-              <p class="text-xl text-brand-text-secondary max-w-2xl mb-8 font-sans">Your personal space to cherish family stories. Select a relative from the list to begin.</p>
-            </div>
-        </div>`;
-      };
-
-      const renderMainContent = () => {
-        let newContentHtml;
+      function getMainContentHtml() {
         const relative = state.relatives.find(r => r.id === state.selectedRelativeId);
         
-        if (relative) {
-          newContentHtml = getArticleViewHtml(relative);
+        const getMobileHeader = () => `<header class="p-4 border-b border-brand-border flex items-center md:hidden sticky top-0 bg-brand-surface/80 backdrop-blur-sm z-10"><button id="menu-button" class="p-2 -ml-2 mr-2 text-gray-600 hover:bg-gray-100 rounded-full">${ICONS.menu}</button><h2 class="text-lg font-semibold text-brand-text-primary truncate">FamiliPedia</h2></header>`;
+
+        if (!relative) {
+          return `<div class="h-full bg-brand-surface">${getMobileHeader()}<div class="flex flex-col items-center justify-center h-full text-center p-8"><div>${ICONS.welcomeBook}</div><h2 class="text-4xl font-bold font-serif text-brand-text-primary mb-2">Welcome to FamiliPedia</h2><p class="text-xl text-brand-text-secondary max-w-2xl mb-8 font-sans">Your personal space to cherish family stories.</p></div></div>`;
+        }
+
+        const renderArticleBody = () => {
+          if (relative.lockInfo?.locked) {
+            return `<div class="border-t border-brand-border mt-8 pt-8"><div class="bg-gray-100 border border-gray-200 rounded-xl p-6 flex items-center space-x-5"><div class="shrink-0">${ICONS.lock}</div><div><h3 class="text-lg font-bold text-brand-text-primary font-serif">Просмотр статьи ограничен</h3><p class="text-brand-text-secondary mt-1 text-sm">${relative.lockInfo.reason}</p></div></div></div>`;
+          }
+          const bannersHtml = (relative.banners?.length) ? `<div class="space-y-4 mb-8">${relative.banners.map(banner => {
+              const config = banner.type === 'neutrality' ? {i:ICONS.warning,b:'bg-yellow-100/80',t:'text-yellow-800',d:'border-yellow-300/80'} : {i:ICONS.info,b:'bg-blue-100/80',t:'text-blue-800',d:'border-blue-200/80'};
+              return `<div class="flex items-start p-4 space-x-4 ${config.b} ${config.t} border ${config.d} rounded-xl"><div class="shrink-0">${config.i}</div><p class="text-sm font-medium">${banner.text}</p></div>`;
+          }).join('')}</div>` : '';
+          const infoboxHtml = (() => {
+              if (!relative.details && !relative.imageUrl) return '';
+              const hasDetails = relative.details && Object.keys(relative.details).length > 0;
+              return `<div class="mb-6 sm:float-right sm:ml-6 sm:mb-6 w-full sm:w-64 md:w-72 lg:w-80 clear-right [shape-outside:margin-box] [shape-margin:1.5rem]"><aside class="border border-brand-border rounded-xl bg-gray-50/50 backdrop-blur-sm shadow-subtle overflow-hidden">${relative.imageUrl ? `<img src="${relative.imageUrl}" alt="${relative.name}" class="w-full h-auto object-cover">` : ''}${hasDetails ? `<div class="p-4 text-sm"><dl class="space-y-3">${Object.entries(relative.details).map(([key, value]) => `<div><dt class="font-semibold text-brand-text-secondary">${key}</dt><dd class="text-brand-text-primary mt-0.5">${Array.isArray(value) ? `<ul class="list-none pl-0">${value.map(item => `<li>${item}</li>`).join('')}</ul>` : value}</dd></div>`).join('')}</dl></div>` : ''}</aside></div>`;
+          })();
+          const markdownHtml = `<div class="prose prose-lg max-w-none text-brand-text-primary leading-relaxed font-serif selection:bg-brand-accent selection:text-white">${DOMPurify.sanitize(marked.parse(relative.content))}</div>`;
+          return `${bannersHtml}<div class="md:border-t md:border-brand-border md:pt-8">${infoboxHtml}${markdownHtml}</div>`;
+        };
+
+        return `<div class="h-full bg-brand-surface animate-fade-in">${getMobileHeader()}<div class="p-6 sm:p-8 md:p-12"><div class="max-w-4xl mx-auto"><div class="mb-8"><h1 class="text-3xl md:text-4xl lg:text-5xl font-bold font-serif text-brand-text-primary">${relative.name}</h1></div>${renderArticleBody()}</div></div></div>`;
+      }
+      
+      function toggleSidebar(forceClose = false) {
+        const isOpen = document.body.dataset.sidebarOpen === 'true';
+        if (forceClose) {
+            document.body.dataset.sidebarOpen = 'false';
         } else {
-          newContentHtml = getWelcomeScreenHtml();
+            document.body.dataset.sidebarOpen = isOpen ? 'false' : 'true';
+        }
+        render(); // Перерисовываем приложение, чтобы обновить классы
+      }
+
+      appContainer.addEventListener('click', (e) => {
+        // Клик по пункту меню
+        const link = e.target.closest('li[data-id] a');
+        if (link) {
+          e.preventDefault();
+          const id = link.parentElement.dataset.id;
+          if (id !== state.selectedRelativeId) {
+              state.selectedRelativeId = id;
+              render();
+          }
+          if (window.innerWidth < 768) {
+            toggleSidebar(true);
+          }
+          return;
         }
 
-        mainContentEl.innerHTML = newContentHtml;
-        mainContentEl.firstElementChild?.classList.add('animate-fade-in');
-
-        menuButtonEl = document.getElementById('menu-button');
-        if (menuButtonEl) {
-            menuButtonEl.addEventListener('click', toggleSidebar);
+        // Клик по кнопке "бургер"
+        if (e.target.closest('#menu-button')) {
+          toggleSidebar();
+          return;
         }
-      };
+        
+        // Клик по оверлею
+        if (e.target.id === 'sidebar-overlay') {
+          toggleSidebar(true);
+          return;
+        }
+      });
+
+      appContainer.addEventListener('input', (e) => {
+        if (e.target.id === 'search-input') {
+          state.searchTerm = e.target.value;
+          render();
+        }
+      });
       
-      const handleSelectRelative = (id) => {
-        if (id === state.selectedRelativeId) return;
-        state.selectedRelativeId = id;
-        renderApp(); // Вызываем единую функцию для перерисовки
-      };
-
-      const handleSearch = (term) => {
-        state.searchTerm = term;
-        renderSidebar(); // При поиске перерисовываем только сайдбар
-      };
-
-      const toggleSidebar = () => {
-          const isOpen = sidebarEl.classList.contains('translate-x-0');
-          if (isOpen) {
-              sidebarEl.classList.replace('translate-x-0', '-translate-x-full');
-              overlayEl.classList.add('hidden');
-          } else {
-              sidebarEl.classList.replace('-translate-x-full', 'translate-x-0');
-              overlayEl.classList.remove('hidden');
-          }
-      };
-
-      const attachListeners = () => {
-        sidebarEl.addEventListener('input', e => {
-          if (e.target.id === 'search-input') {
-            handleSearch(e.target.value);
-          }
-        });
-        sidebarEl.addEventListener('click', e => {
-          const link = e.target.closest('a');
-          const li = link?.parentElement;
-          if (li && li.dataset.id) {
-            e.preventDefault();
-            handleSelectRelative(li.dataset.id);
-            if (window.innerWidth < 768) {
-              toggleSidebar();
-            }
-          }
-        });
-        overlayEl.addEventListener('click', toggleSidebar);
-      };
-      
-      const renderApp = () => {
-        renderSidebar();
-        renderMainContent();
-      };
-
-      const init = () => {
-        if (state.relatives.length > 0) {
+      function init() {
+        if (state.relatives.length > 0 && !state.selectedRelativeId) {
           state.selectedRelativeId = state.relatives[0].id;
         }
-        renderApp();
-        attachListeners();
-      };
+        render();
+      }
 
       init();
     </script>
