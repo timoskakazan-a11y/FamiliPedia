@@ -1,4 +1,5 @@
-export const relativesData = [
+// --- МАССИВ С РОДСТВЕННИКАМИ ---
+const relativesData = [
     {
         id: '1',
         name: 'Eleanora Vance',
@@ -19,10 +20,9 @@ She always recommended visiting the [Kew Gardens in London](https://www.kew.org/
             'Род деятельности': 'Путешественница, садовник',
             'Увлечения': ['Выращивание роз', 'Кулинария', 'Рассказывание историй']
         },
-        // --- ПРОСТАЯ СТРУКТУРА ---
         lockReason: '', 
-        editingNotice: '', // <-- НОВАЯ ПЕРЕМЕННАЯ
-        neutralityBanner: 'Стиль этой статьи может быть не нейтральным. Пожалуйста, улучшите её, чтобы она соответствовала стандартам энциклопедии.',
+        editingNotice: '', 
+        neutralityBanner: 'Стиль этой статьи может быть не нейтральным.',
         unverifiedBanner: 'Информация в этой статье не проверялась с 15 августа 2024 года.'
     },
     {
@@ -31,54 +31,62 @@ She always recommended visiting the [Kew Gardens in London](https://www.kew.org/
         birthDate: 'October 5, 1952',
         deathDate: '',
         imageUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=800&auto=format&fit=crop',
-        content: `Samuel, or Sam as everyone knows him, is a master craftsman and storyteller. He can build anything from a sturdy bookshelf to an intricate birdhouse with his own two hands. His workshop is a magical place, filled with the smell of sawdust and the sound of his cheerful whistling.\n\nHe served as a firefighter for 30 years, a chapter of his life filled with bravery and service to his community. Now retired, he spends his days fishing at the lake, spoiling his grandchildren, and perfecting his famous barbecue sauce recipe.`,
+        content: `Samuel, or Sam as everyone knows him, is a master craftsman and storyteller. He can build anything from a sturdy bookshelf to an intricate birdhouse with his own two hands. His workshop is a magical place, filled with the smell of sawdust and the sound of his cheerful whistling.`,
         details: {
             'Родился': '5 октября 1952 г.',
             'Род деятельности': 'Мастер на все руки, Пожарный (в отставке)',
             'Увлечения': ['Рыбалка', 'Столярное дело', 'Барбекю']
         },
         lockReason: 'Статья временно заблокирована из-за споров о точности представленных фактов.',
-        editingNotice: '', // <-- НОВАЯ ПЕРЕМЕННАЯ
+        editingNotice: '', 
         neutralityBanner: '', 
         unverifiedBanner: ''
     },
+    // ... другие родственники
+];
+
+// --- НОВЫЙ МАССИВ С СОБЫТИЯМИ ---
+const eventsData = [
     {
-        id: '3',
-        name: 'Третьякова Алина Вячеславовна',
-        birthDate: 'October 5, 1986',
-        deathDate: '',
-        imageUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=800&auto=format&fit=crop',
-        content: `Алина — творческая душа с сердцем исследователя. Посвятив годы изучению классической литературы, она нашла свое призвание в написании детских книг, которые вдохновляют юные умы мечтать и открывать новое.\n\nЕё страсть к путешествиям привела ее в самые отдаленные уголки мира, откуда она привозит не только сувениры, а идеи для своих следующих сказок. Алина верит, что каждая культура — это уникальная история, которую стоит рассказать.`,
+        id: '1',
+        name: 'Пожар в старом доме',
+        date: '12 мая 1995 г.',
+        imageUrl: 'https://images.unsplash.com/photo-1561332560-165512755554?q=80&w=800&auto=format&fit=crop',
+        content: `Это было трагическое событие, которое сильно повлияло на всю семью. Старый дом, в котором выросло не одно поколение, был уничтожен огнем из-за неисправной проводки.
+
+## Последствия
+К счастью, никто не пострадал, но были утеряны многие семейные реликвии и фотографии. Это событие сплотило семью и заставило всех осознать ценность нематериальных вещей и взаимной поддержки. Сэмюэл Торнтон, будучи пожарным, координировал действия до приезда своей бригады, проявив настоящий героизм.`,
         details: {
-            'Родилась': '5 октября 1986 г.',
-            'Род деятельности': 'Писательница, путешественница',
-            'Образование': 'Филологический факультет',
-            'Увлечения': ['Чтение', 'Пешие прогулки', 'Фотография']
+            'Дата': '12 мая 1995 г.',
+            'Место': 'г. Бруксвилл, ул. Вязовая, 14',
+            'Ключевые участники': ['Семья Торнтон'],
+            'Исход': 'Дом уничтожен, пострадавших нет'
         },
         lockReason: '',
-        // --- ПРИМЕР НОВОЙ ПЛАШКИ ---
-        editingNotice: 'В настоящее время статья дополняется информацией о её последних путешествиях. Просмотр временно недоступен.',
+        editingNotice: '',
         neutralityBanner: '',
-        unverifiedBanner: ''
+        unverifiedBanner: 'Требуется уточнение деталей у очевидцев.'
     },
     {
-        id: '4',
-        name: 'Щур Полина Леонидовна',
-        birthDate: 'May 8, 2001',
-        deathDate: '',
-        imageUrl: 'https://sun9-4.userapi.com/impg/ji9SyKdj9_BEBEw5neKQOAa0N0DwM2BQ1aTgeA/iBkaguXy2ag.jpg?size=1904x1904&quality=96&sign=17549c3ac62acb06e54bab57e27fd5d8&c_uniq_tag=H05Et8z0VH3XKFUGgM-4S9BD6jstgYale5SrbTxY4wA&type=album',
-        content: `Полина — целеустремленная и энергичная личность. В юности она профессионально занималась хоккеем на траве, что воспитало в ней дисциплину и командный дух.\n\nПосле окончания Казанского государственного архитектурно-строительного университета (КГАСУ) она начала карьеру в качестве проектировщика дорог. В настоящее время проживает в Казани.\n\nВне работы Полина проводит время со своим котом Саймоном. Поддерживает связь с друзьями и близкими через социальные сети.`,
+        id: '2',
+        name: 'Большое воссоединение семьи',
+        date: '4-6 июля 2022 г.',
+        imageUrl: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?q=80&w=800&auto=format&fit=crop',
+        content: `Впервые за почти 10 лет вся семья собралась вместе, чтобы отпраздновать 70-летие Сэмюэла Торнтона. Мероприятие проходило в загородном доме у озера и длилось три дня.
+
+Было организовано множество мероприятий, включая совместную рыбалку, конкурс на лучший шашлык и вечер историй у костра, где каждый делился своими воспоминаниями. Элеонора Вэнс, даже будучи в преклонном возрасте, рассказала несколько своих знаменитых историй о путешествиях, которые слушали и взрослые, и дети.`,
         details: {
-            'Родилась': '8 мая 2001 г.',
-            'Образование': 'КГАСУ (Проектировщик дорог)',
-            'Место жительства': 'Казань, ул. Ямашева, 31а',
-            'Увлечения': ['Хоккей на траве'],
-            'Питомцы': 'Кот Саймон',
-            'Контакты': ['ВКонтакте: @idplnschr08']
+            'Дата': '4-6 июля 2022 г.',
+            'Место': 'Загородный дом у озера "Чистое"',
+            'Повод': '70-летие Сэмюэла Торнтона',
+            'Присутствовало': '42 члена семьи'
         },
         lockReason: '',
-        editingNotice: '', // <-- НОВАЯ ПЕРЕМЕННАЯ
+        editingNotice: '',
         neutralityBanner: '',
         unverifiedBanner: ''
     }
 ];
+
+// --- ЭКСПОРТИРУЕМ ОБА МАССИВА ---
+export { relativesData, eventsData };
