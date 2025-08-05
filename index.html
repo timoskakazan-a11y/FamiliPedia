@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FamiliPedia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+      /* --- Custom Styles & Overrides --- */
+      ::-webkit-scrollbar { width: 12px; height: 12px; }
+      ::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.2); border-radius: 6px; border: 3px solid transparent; background-clip: content-box; }
+      ::-webkit-scrollbar-track { background-color: transparent; }
+      
+      /* --- Markdown & Prose Styles --- */
+      .prose {
+        --tw-prose-body: theme(colors.brand-text-primary);
+        --tw-prose-headings: theme(colors.brand-text-primary);
+        --tw-prose-lead: theme(colors.brand-text-secondary);
+      }
+      .prose h2 { font-size: 1.5rem; font-weight: 700; margin-top: 2em; margin-bottom: 1em; }
+      .prose a { color: theme(colors.brand-accent); text-decoration: none; font-weight: 500; }
+      .prose a:hover { text-decoration: underline; }
+      .prose ul { list-style-type: disc; padding-left: 1.75rem; margin-top: 1em; margin-bottom: 1em; }
+      .prose ol { list-style-type: decimal; padding-left: 1.75rem; margin-top: 1em; margin-bottom: 1em; }
+      .prose .footnote-ref { color: theme(colors.brand-accent); font-size: 0.8em; vertical-align: super; line-height: 0; text-decoration: none; }
+      .prose .footnote-ref:hover { text-decoration: underline; }
+      .prose .footnotes { margin-top: 2.5em; padding-top: 1.5em; border-top: 1px solid theme(colors.brand-border); font-size: 0.9em; }
+      .prose .footnotes ol { padding-left: 1.5em; }
+      .prose .footnotes li p { display: inline; }
+      .prose .footnote-backref { font-family: sans-serif; color: theme(colors.brand-accent); text-decoration: none; }
+      .prose .footnote-backref:hover { text-decoration: underline; }
+
+      /* --- Animation Keyframes --- */
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+      }
+      .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+      .animate-fade-out { animation: fadeOut 0.2s ease-in forwards; }
+
+      /* --- Mobile Responsiveness Fix --- */
+      @media (max-width: 767px) {
+        #app-container {
+          height: auto;
+          overflow-y: auto;
+        }
+        #sidebar {
+          height: auto;
+        }
+        #main-content {
+          height: auto;
+          /* Ensure main content is at least the height of the screen to avoid empty space */
+          min-height: 100vh; 
+        }
+      }
+    </style>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              serif: ['Lora', 'serif'],
+            },
+            colors: {
+              'brand-bg': '#f7f7f7',
+              'brand-sidebar': '#ededed',
+              'brand-surface': '#ffffff',
+              'brand-border': '#e5e5e5',
+              'brand-text-primary': '#1d1d1f',
+              'brand-text-secondary': '#6e6e73',
+              'brand-accent': '#007aff',
+              'brand-accent-hover': '#0062cc',
+            },
+            borderRadius: { 'xl': '1rem', '2xl': '1.5rem' },
+            boxShadow: {
+              'subtle': '0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05)',
+              'medium': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+            }
+          }
+        }
+      }
+    </script>
+    <script type="importmap">
+    {
+      "imports": {
+        "marked": "https://esm.sh/marked@^12.0.2",
+        "dompurify": "https://esm.sh/dompurify@^3.1.2"
+      }
+    }
+    </script>
+</head>
+<body class="bg-brand-bg antialiased">
+    
+    <div id="app-container" class="flex flex-col md:flex-row h-screen font-sans text-brand-text-primary bg-brand-bg overflow-hidden">
+        <aside id="sidebar" class="w-full md:w-72 lg:w-80 bg-brand-sidebar/70 backdrop-blur-xl flex flex-col h-full border-r border-black/10 shrink-0"></aside>
+        <main id="main-content" class="flex-1 h-full relative overflow-hidden"></main>
+    </div>
+
+    <script type="module">
+      import { relativesData } from './data.js';
+      import { marked } from 'marked';
+      import DOMPurify from 'dompurify';
+
+      const state = {
+        relatives: relativesData,
+        selectedRelativeId: null,
+        searchTerm: '',
+        isLoading: true,
+      };
+
+      const sidebarEl = document.getElementById('sidebar');
+      const mainContentEl = document.getElementById('main-content');
+
+      const ICONS = {
+        bookOpen: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-brand-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>`,
+        search: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-brand-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>`,
+      };
+
+      const renderSidebar = () => {
+        const filteredRelatives = state.relatives
+          .filter(r => r.name.toLowerCase().includes(state.searchTerm.toLowerCase()))
+          .sort((a, b) => a.name.localeCompare(b.name));
+        
+        const relativesListHtml = filteredRelatives.map(relative => `
+          <li data-id="${relative.id}" class="transition-all duration-200">
+            <a href="#" class="block p-2 my-1 rounded-lg text-left w-full transition-colors duration-150 ${state.selectedRelativeId === relative.id ? 'bg-brand-accent text-white shadow-lg shadow-blue-500/30' : 'text-brand-text-primary hover:bg-black/10'}">
+              <span class="font-medium">${relative.name}</span>
+            </a>
+          </li>
+        `).join('');
+
+        sidebarEl.innerHTML = `
+          <div class="p-4 border-b border-black/10 flex items-center justify-between flex-shrink-0">
+            <div class="flex items-center space-x-2">
+              ${ICONS.bookOpen}
+              <h1 class="text-xl font-semibold text-brand-text-primary">FamiliPedia</h1>
+            </div>
+          </div>
+          <div class="p-4 flex-shrink-0">
+            <div class="relative">
+              <input type="text" placeholder="Search..." value="${state.searchTerm}" id="search-input" class="w-full pl-9 pr-4 py-2 bg-black/5 text-brand-text-primary placeholder-brand-text-secondary border border-transparent rounded-lg focus:ring-2 focus:ring-brand-accent focus:outline-none focus:bg-white transition-all duration-300">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">${ICONS.search}</div>
+            </div>
+          </div>
+          <nav class="flex-1 overflow-y-auto px-2 pt-0 p-4">
+            <ul id="relatives-list">${relativesListHtml}</ul>
+          </nav>
+        `;
+      };
+      
+      const renderInfobox = (relative) => {
+          if (!relative.details && !relative.imageUrl) return '';
+
+          const hasDetails = relative.details && Object.keys(relative.details).length > 0;
+          const detailsHtml = hasDetails ? Object.entries(relative.details).map(([key, value]) => `
+              <div key="${key}">
+                  <dt class="font-semibold text-brand-text-secondary">${key}</dt>
+                  <dd class="text-brand-text-primary mt-0.5">
+                      ${Array.isArray(value) ? `<ul class="list-none pl-0">${value.map(item => `<li>${item}</li>`).join('')}</ul>` : value}
+                  </dd>
+              </div>
+          `).join('') : '';
+
+          return `
+              <div class="float-right ml-6 mb-6 w-full sm:w-64 md:w-72 lg:w-80 clear-right [shape-outside:margin-box] [shape-margin:1.5rem]">
+                  <aside class="border border-brand-border rounded-xl bg-brand-bg/80 backdrop-blur-sm shadow-subtle overflow-hidden">
+                      ${relative.imageUrl ? `<img src="${relative.imageUrl}" alt="${relative.name}" class="w-full h-auto object-cover">` : ''}
+                      ${hasDetails ? `<div class="p-4 text-sm"><dl class="space-y-3">${detailsHtml}</dl></div>` : ''}
+                  </aside>
+              </div>
+          `;
+      };
+
+      const renderMarkdown = (content) => {
+        marked.use({ gfm: true, breaks: false });
+        const rawHtml = marked.parse(content);
+        const sanitizedHtml = DOMPurify.sanitize(rawHtml);
+        return `<div class="prose prose-lg max-w-none text-brand-text-primary leading-relaxed font-serif selection:bg-brand-accent selection:text-white">${sanitizedHtml}</div>`;
+      };
+
+      const getArticleViewHtml = (relative) => `
+        <div class="p-6 sm:p-8 md:p-12 h-full overflow-y-auto bg-brand-surface">
+          <div class="max-w-4xl mx-auto">
+            <div class="mb-8">
+              <h1 class="text-4xl md:text-5xl font-bold font-serif text-brand-text-primary">${relative.name}</h1>
+            </div>
+            <div class="border-t border-brand-border pt-8">
+              ${renderInfobox(relative)}
+              ${renderMarkdown(relative.content)}
+            </div>
+          </div>
+        </div>
+      `;
+      
+      const getWelcomeScreenHtml = () => `
+        <div class="flex flex-col items-center justify-center h-full text-center p-8 bg-brand-surface">
+            <div><svg xmlns="http://www.w3.org/2000/svg" class="w-24 h-24 text-gray-200 mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg></div>
+            <h2 class="text-4xl font-bold font-serif text-brand-text-primary mb-2">Welcome to FamiliPedia</h2>
+            <p class="text-xl text-brand-text-secondary max-w-2xl mb-8 font-sans">Your personal space to cherish family stories. Select a relative from the list to begin.</p>
+        </div>
+      `;
+
+      const getSkeletonLoaderHtml = () => {
+          const shimmer = (className) => `<div class="bg-gray-200 rounded ${className || ''} animate-pulse"></div>`;
+          return `
+            <div class="p-6 sm:p-8 md:p-12 h-full overflow-y-auto bg-brand-surface">
+                <div class="max-w-4xl mx-auto">
+                    <div class="mb-8">${shimmer('h-12 w-3/4 mb-4')} ${shimmer('h-6 w-1/2')}</div>
+                    <div class="border-t border-brand-border pt-8">
+                        <div class="mb-8 float-right ml-8 w-64 clear-right"><div class="bg-gray-200 rounded-lg w-full h-96 animate-pulse"></div></div>
+                        <div class="space-y-4">${shimmer('h-5 w-full')} ${shimmer('h-5 w-full')} ${shimmer('h-5 w-11/12')} <br/> ${shimmer('h-5 w-full')} ${shimmer('h-5 w-10/12')} <br/> ${shimmer('h-5 w-full')} ${shimmer('h-5 w-4/5')}</div>
+                    </div>
+                </div>
+            </div>`;
+      };
+      
+      const renderMainContent = () => {
+        let newContentHtml;
+        if (state.isLoading) {
+          newContentHtml = getSkeletonLoaderHtml();
+        } else if (state.selectedRelativeId) {
+          const relative = state.relatives.find(r => r.id === state.selectedRelativeId);
+          newContentHtml = relative ? getArticleViewHtml(relative) : getWelcomeScreenHtml();
+        } else {
+          newContentHtml = getWelcomeScreenHtml();
+        }
+
+        const oldContentEl = mainContentEl.firstElementChild;
+        
+        const renderNewContent = () => {
+          mainContentEl.innerHTML = newContentHtml;
+          mainContentEl.firstElementChild.classList.add('animate-fade-in');
+        };
+
+        if (oldContentEl) {
+          oldContentEl.classList.remove('animate-fade-in');
+          oldContentEl.classList.add('animate-fade-out');
+          oldContentEl.addEventListener('animationend', renderNewContent, { once: true });
+        } else {
+          renderNewContent();
+        }
+      };
+      
+      const updateSidebarList = () => {
+        const filteredRelatives = state.relatives
+          .filter(r => r.name.toLowerCase().includes(state.searchTerm.toLowerCase()))
+          .sort((a, b) => a.name.localeCompare(b.name));
+
+        const listEl = document.getElementById('relatives-list');
+        if (listEl) {
+          listEl.innerHTML = filteredRelatives.map(relative => `
+            <li data-id="${relative.id}" class="transition-all duration-200">
+              <a href="#" class="block p-2 my-1 rounded-lg text-left w-full transition-colors duration-150 ${state.selectedRelativeId === relative.id ? 'bg-brand-accent text-white shadow-lg shadow-blue-500/30' : 'text-brand-text-primary hover:bg-black/10'}">
+                <span class="font-medium">${relative.name}</span>
+              </a>
+            </li>
+          `).join('');
+        }
+      };
+
+      const handleSelectRelative = (id) => {
+        if (id === state.selectedRelativeId && !state.isLoading) return;
+
+        state.isLoading = true;
+        renderMainContent(); // Show skeleton
+        
+        setTimeout(() => {
+          state.selectedRelativeId = id;
+          state.isLoading = false;
+          renderMainContent();
+          updateSidebarList();
+        }, 250);
+      };
+
+      const attachSidebarListeners = () => {
+        sidebarEl.addEventListener('input', e => {
+          if (e.target.id === 'search-input') {
+            state.searchTerm = e.target.value;
+            updateSidebarList();
+          }
+        });
+
+        sidebarEl.addEventListener('click', e => {
+          const link = e.target.closest('a');
+          if (link) {
+            const li = link.parentElement;
+            if (li && li.dataset.id) {
+              e.preventDefault();
+              handleSelectRelative(li.dataset.id);
+            }
+          }
+        });
+      };
+      
+      const init = () => {
+        state.relatives.forEach(relative => {
+          if (relative.imageUrl) new Image().src = relative.imageUrl;
+        });
+        
+        if (state.relatives.length > 0) {
+          state.selectedRelativeId = state.relatives[0].id;
+        }
+        state.isLoading = false;
+
+        renderSidebar();
+        renderMainContent();
+        attachSidebarListeners();
+      };
+
+      init();
+    </script>
+</body>
+</html>
