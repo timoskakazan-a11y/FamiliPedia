@@ -84,7 +84,6 @@
         relatives: relativesData,
         selectedRelativeId: null,
         searchTerm: '',
-        isLoading: true,
       };
 
       const sidebarEl = document.getElementById('sidebar');
@@ -92,7 +91,7 @@
       const overlayEl = document.getElementById('sidebar-overlay');
       let menuButtonEl;
 
-      const ICONS = { /* Иконки остаются без изменений */ 
+      const ICONS = {
         bookOpen: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-brand-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>`,
         search: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-brand-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>`,
         warning: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`,
@@ -107,13 +106,19 @@
           .filter(r => r.name.toLowerCase().includes(state.searchTerm.toLowerCase()))
           .sort((a, b) => a.name.localeCompare(b.name));
         
-        const relativesListHtml = filteredRelatives.map(relative => `
-          <li data-id="${relative.id}">
-            <a href="#" class="block p-2.5 my-1 rounded-lg text-left w-full transition-colors duration-150 text-brand-text-primary hover:bg-black/5">
-              <span class="font-medium">${relative.name}</span>
-            </a>
-          </li>
-        `).join('');
+        const relativesListHtml = filteredRelatives.map(relative => {
+          const isActive = relative.id === state.selectedRelativeId;
+          const activeClasses = 'bg-brand-accent text-white shadow-md shadow-blue-500/30';
+          const inactiveClasses = 'text-brand-text-primary hover:bg-black/5';
+
+          return `
+            <li data-id="${relative.id}">
+              <a href="#" class="block p-2.5 my-1 rounded-lg text-left w-full transition-colors duration-150 ${isActive ? activeClasses : inactiveClasses}">
+                <span class="font-medium">${relative.name}</span>
+              </a>
+            </li>
+          `;
+        }).join('');
 
         sidebarEl.innerHTML = `
           <div class="p-4 border-b border-black/10 flex items-center justify-between flex-shrink-0">
@@ -127,11 +132,9 @@
           </div>
           <nav class="flex-1 overflow-y-auto px-4 pt-0"><ul id="relatives-list">${relativesListHtml}</ul></nav>
         `;
-        // После отрисовки применяем активное состояние
-        updateSidebarActiveState();
       };
       
-      const renderInfobox = (relative) => { /* ...без изменений... */ 
+      const renderInfobox = (relative) => {
           if (!relative.details && !relative.imageUrl) return '';
           const hasDetails = relative.details && Object.keys(relative.details).length > 0;
           return `
@@ -143,11 +146,13 @@
                   </aside>
               </div>`;
       };
-      const renderMarkdown = (content) => { /* ...без изменений... */ 
+      
+      const renderMarkdown = (content) => {
         marked.use({ gfm: true, breaks: false });
         return `<div class="prose prose-lg max-w-none text-brand-text-primary leading-relaxed font-serif selection:bg-brand-accent selection:text-white">${DOMPurify.sanitize(marked.parse(content))}</div>`;
       };
-      const renderBanners = (relative) => { /* ...без изменений... */ 
+      
+      const renderBanners = (relative) => {
         if (!relative.banners?.length) return '';
         return `<div class="space-y-4 mb-8">${relative.banners.map(banner => {
             const config = banner.type === 'neutrality' 
@@ -156,7 +161,8 @@
             return `<div class="flex items-start p-4 space-x-4 ${config.bg} ${config.text} border ${config.border} rounded-xl"><div class="shrink-0">${config.icon}</div><p class="text-sm font-medium">${banner.text}</p></div>`;
         }).join('')}</div>`;
       };
-      const renderLockNotice = (relative) => { /* ...без изменений... */ 
+      
+      const renderLockNotice = (relative) => {
         if (!relative.lockInfo?.locked) return '';
         return `
             <div class="border-t border-brand-border mt-8 pt-8">
@@ -170,7 +176,8 @@
             </div>
         `;
       };
-      const getArticleBodyHtml = (relative) => { /* ...без изменений... */ 
+      
+      const getArticleBodyHtml = (relative) => {
         if (relative.lockInfo?.locked) return renderLockNotice(relative);
         return `
             ${renderBanners(relative)}
@@ -180,7 +187,8 @@
             </div>
         `;
       };
-      const getArticleViewHtml = (relative) => { /* ...без изменений... */ 
+
+      const getArticleViewHtml = (relative) => {
         return `
         <div class="h-full bg-brand-surface">
             <header class="p-4 border-b border-brand-border flex items-center md:hidden sticky top-0 bg-brand-surface/80 backdrop-blur-sm z-10">
@@ -193,62 +201,53 @@
             </div></div>
         </div>`;
       };
-      const getWelcomeScreenHtml = () => { /* ...без изменений... */ 
+      
+      const getWelcomeScreenHtml = () => {
         return `
         <div class="flex flex-col items-center justify-center h-full text-center p-8 bg-brand-surface">
-            <div>${ICONS.welcomeBook}</div>
-            <h2 class="text-4xl font-bold font-serif text-brand-text-primary mb-2">Welcome to FamiliPedia</h2>
-            <p class="text-xl text-brand-text-secondary max-w-2xl mb-8 font-sans">Your personal space to cherish family stories. Select a relative from the list to begin.</p>
+            <header class="p-4 border-b border-brand-border flex items-center md:hidden sticky top-0 bg-brand-surface/80 backdrop-blur-sm z-10">
+                <button id="menu-button" class="p-2 -ml-2 mr-2 text-gray-600 hover:bg-gray-100 rounded-full">${ICONS.menu}</button>
+                <h2 class="text-lg font-semibold text-brand-text-primary truncate">FamiliPedia</h2>
+            </header>
+            <div class="flex-1 flex flex-col items-center justify-center">
+              <div>${ICONS.welcomeBook}</div>
+              <h2 class="text-4xl font-bold font-serif text-brand-text-primary mb-2">Welcome to FamiliPedia</h2>
+              <p class="text-xl text-brand-text-secondary max-w-2xl mb-8 font-sans">Your personal space to cherish family stories. Select a relative from the list to begin.</p>
+            </div>
         </div>`;
       };
 
       const renderMainContent = () => {
         let newContentHtml;
-        if (state.selectedRelativeId) {
-          const relative = state.relatives.find(r => r.id === state.selectedRelativeId);
-          newContentHtml = relative ? getArticleViewHtml(relative) : getWelcomeScreenHtml();
+        const relative = state.relatives.find(r => r.id === state.selectedRelativeId);
+        
+        if (relative) {
+          newContentHtml = getArticleViewHtml(relative);
         } else {
           newContentHtml = getWelcomeScreenHtml();
         }
+
         mainContentEl.innerHTML = newContentHtml;
         mainContentEl.firstElementChild?.classList.add('animate-fade-in');
+
         menuButtonEl = document.getElementById('menu-button');
         if (menuButtonEl) {
             menuButtonEl.addEventListener('click', toggleSidebar);
         }
       };
       
-      // --- НОВАЯ ОПТИМИЗИРОВАННАЯ ФУНКЦИЯ ---
-      const updateSidebarActiveState = () => {
-        const activeItem = sidebarEl.querySelector('a.bg-brand-accent');
-        if (activeItem) {
-          activeItem.classList.remove('bg-brand-accent', 'text-white', 'shadow-md', 'shadow-blue-500/30');
-          activeItem.classList.add('text-brand-text-primary', 'hover:bg-black/5');
-        }
-        if (state.selectedRelativeId) {
-          const newActiveItem = sidebarEl.querySelector(`li[data-id="${state.selectedRelativeId}"] a`);
-          if (newActiveItem) {
-            newActiveItem.classList.remove('text-brand-text-primary', 'hover:bg-black/5');
-            newActiveItem.classList.add('bg-brand-accent', 'text-white', 'shadow-md', 'shadow-blue-500/30');
-          }
-        }
-      };
-      
-      // --- ИЗМЕНЕНО: ЛОГИКА СМЕНЫ СТАТЬИ БЕЗ ЗАДЕРЖКИ ---
       const handleSelectRelative = (id) => {
         if (id === state.selectedRelativeId) return;
-
-        // 1. Обновляем состояние
         state.selectedRelativeId = id;
-        
-        // 2. Мгновенно перерисовываем основное содержимое
-        renderMainContent();
-        
-        // 3. Точечно обновляем подсветку в боковой панели
-        updateSidebarActiveState();
+        renderApp(); // Вызываем единую функцию для перерисовки
       };
 
-      const toggleSidebar = () => { /* ...без изменений... */ 
+      const handleSearch = (term) => {
+        state.searchTerm = term;
+        renderSidebar(); // При поиске перерисовываем только сайдбар
+      };
+
+      const toggleSidebar = () => {
           const isOpen = sidebarEl.classList.contains('translate-x-0');
           if (isOpen) {
               sidebarEl.classList.replace('translate-x-0', '-translate-x-full');
@@ -262,8 +261,7 @@
       const attachListeners = () => {
         sidebarEl.addEventListener('input', e => {
           if (e.target.id === 'search-input') {
-            state.searchTerm = e.target.value;
-            renderSidebar(); // Перерисовываем список при поиске
+            handleSearch(e.target.value);
           }
         });
         sidebarEl.addEventListener('click', e => {
@@ -280,18 +278,20 @@
         overlayEl.addEventListener('click', toggleSidebar);
       };
       
+      const renderApp = () => {
+        renderSidebar();
+        renderMainContent();
+      };
+
       const init = () => {
         if (state.relatives.length > 0) {
           state.selectedRelativeId = state.relatives[0].id;
         }
-        renderSidebar();
-        renderMainContent();
+        renderApp();
         attachListeners();
       };
 
       init();
     </script>
 </body>
-</html>```
-
-Файл `data.js` остается без изменений. После обновления `index.html` ваше приложение должно работать очень быстро и плавно.
+</html>
