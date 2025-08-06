@@ -13,7 +13,7 @@
       ::-webkit-scrollbar { width: 12px; height: 12px; }
       ::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.2); border-radius: 6px; border: 3px solid transparent; background-clip: content-box; }
       .prose h2 { font-size: 1.5rem; font-weight: 700; margin-top: 2em; margin-bottom: 1em; }
-      .prose a { color: theme(colors.brand-accent); text-decoration: none; font-weight: 500; }
+      .prose a { color: #007aff; text-decoration: none; font-weight: 500; }
       .prose a:hover { text-decoration: underline; }
       summary { cursor: pointer; list-style: none; user-select: none; }
       summary::-webkit-details-marker { display: none; }
@@ -28,17 +28,22 @@
         text-decoration: none;
         color: inherit;
         font-weight: inherit;
-        border-bottom: 1.5px solid black;
+        border-bottom: 1.5px dotted black;
         background: linear-gradient(to top, rgba(255, 229, 100, 0.5) 60%, transparent 60%);
       }
       /* --- СТИЛИ ДЛЯ УПОМИНАНИЙ --- */
       .mention-link {
         cursor: pointer;
-        color: theme(colors.blue.600);
+        color: #007aff; /* --- ИЗМЕНЕНИЕ: Заменено theme() на прямой цвет --- */
         font-weight: 500;
+        background: rgba(0, 122, 255, 0.1);
+        padding: 2px 4px;
+        border-radius: 4px;
+        transition: background-color 0.2s;
       }
       .mention-link:hover {
-        text-decoration: underline;
+        text-decoration: none;
+        background: rgba(0, 122, 255, 0.15);
       }
     </style>
     <script>
@@ -91,18 +96,27 @@
       const footnotePopup = document.getElementById('footnote-popup');
       const mentionPopup = document.getElementById('mention-popup');
 
-      function processCustomMarkdown(content) {
-        if (!content) return '';
-        content = content.replace(/\[\^([^:]+):([^\]]+)\]/g, (match, text, footnote) => {
+      // --- ИЗМЕНЕНИЕ: Новая функция с правильным порядком обработки ---
+      function processContent(rawContent) {
+        if (!rawContent) return '';
+        // Шаг 1: Сначала конвертируем основной Markdown в HTML.
+        let html = marked.parse(rawContent);
+
+        // Шаг 2: Теперь в получившемся HTML ищем и заменяем наши кастомные теги.
+        // `g` флаг для глобального поиска по всему тексту.
+        html = html.replace(/\[\^([^:]+):([^\]]+)\]/g, (match, text, footnote) => {
           const encodedFootnote = DOMPurify.sanitize(footnote.trim()).replace(/"/g, '&quot;');
           return `<a href="#" class="footnote-link" data-footnote-content="${encodedFootnote}">${text.trim()}</a>`;
         });
-        content = content.replace(/\[@([^:]+):([^\]]+)\]/g, (match, text, id) => {
+        html = html.replace(/\[@([^:]+):([^\]]+)\]/g, (match, text, id) => {
           const safeText = DOMPurify.sanitize(text.trim());
           const safeId = DOMPurify.sanitize(id.trim());
           return `<a href="#" class="mention-link" data-mention-id="${safeId}" data-mention-name="${safeText}">${safeText}</a>`;
         });
-        return content;
+
+        // Шаг 3: Возвращаем полностью обработанный и очищенный HTML.
+        // DOMPurify здесь не нужен, так как он уже применен в `marked.parse` и к частям тегов.
+        return html;
       }
 
       function renderFullPage() {
@@ -111,7 +125,7 @@
       }
 
       function renderSidebarHtml() {
-        const filteredItems = state.items.filter(i => i.name.toLowerCase().includes(state.searchTerm.toLowerCase()));
+        const filteredItems = state.items.filter(i => (i.name || '').toLowerCase().includes(state.searchTerm.toLowerCase()));
         const createListHtml = (items) => {
           if (!items || items.length === 0) return '<li class="text-sm text-gray-500 p-2">Ничего не найдено</li>';
           return items.map(item => {
@@ -145,8 +159,10 @@
               const shareLinkHtml = `<div class="mt-4 pt-4 border-t border-brand-border/60"><div class="font-semibold text-brand-text-secondary text-sm mb-2">Ссылка на статью</div><div class="flex items-center space-x-2"><input type="text" readonly value="${shareLink}" class="w-full truncate bg-gray-100 text-brand-accent text-sm p-2 rounded-md border-transparent focus:ring-2 focus:ring-brand-accent"><button data-copy-link="${shareLink}" class="flex-shrink-0 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-3 rounded-md transition-colors">${ICONS.copy}</button></div></div>`;
               return `<div class="mb-6 sm:float-right sm:ml-6 sm:mb-6 w-full sm:w-64 md:w-72 lg:w-80 clear-right [shape-outside:margin-box] [shape-margin:1.5rem]"><aside class="border border-brand-border rounded-xl bg-gray-50/50 backdrop-blur-sm shadow-subtle overflow-hidden">${item.imageUrl ? `<img src="${item.imageUrl}" alt="${item.name}" class="w-full h-auto object-cover">` : ''}<div class="p-4 text-sm">${hasDetails ? `<dl class="space-y-3">${Object.entries(item.details).map(([key, value]) => `<div><dt class="font-semibold text-brand-text-secondary">${key}</dt><dd class="text-brand-text-primary mt-0.5">${Array.isArray(value) ? `<ul class="list-none pl-0">${value.map(v => `<li>${v}</li>`).join('')}</ul>` : value}</dd></div>`).join('')}</dl>` : ''}${shareLinkHtml}</div></aside></div>`;
           })();
-          const processedContent = processCustomMarkdown(item.content);
-          const markdownHtml = `<div class="prose prose-lg max-w-none text-brand-text-primary leading-relaxed font-serif selection:bg-brand-accent selection:text-white">${DOMPurify.sanitize(marked.parse(processedContent))}</div>`;
+          
+          // --- ИЗМЕНЕНИЕ: Используем исправленную функцию processContent ---
+          const processedHtml = processContent(item.content);
+          const markdownHtml = `<div class="prose prose-lg max-w-none text-brand-text-primary leading-relaxed font-serif selection:bg-brand-accent selection:text-white">${processedHtml}</div>`;
           return `${bannersHtml}<div class="md:border-t md:border-brand-border md:pt-8">${infoboxHtml}${markdownHtml}</div>`;
         };
         return `<div class="h-full animate-fade-in">${getMobileHeader()}<div class="p-6 sm:p-8 md:p-12"><div class="max-w-4xl mx-auto"><div class="mb-8"><h1 class="text-3xl md:text-4xl lg:text-5xl font-bold font-serif text-brand-text-primary">${item.name}</h1></div>${renderArticleBody()}</div></div></div>`;
