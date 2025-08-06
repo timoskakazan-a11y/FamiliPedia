@@ -34,7 +34,7 @@
       /* --- СТИЛИ ДЛЯ УПОМИНАНИЙ --- */
       .mention-link {
         cursor: pointer;
-        color: #007aff; /* ИСПРАВЛЕНО: Заменен theme() на прямой цвет */
+        color: #007aff;
         font-weight: 500;
         background: rgba(0, 122, 255, 0.1);
         padding: 2px 4px;
@@ -80,7 +80,7 @@
         searchTerm: '',
       };
 
-      const ICONS = {
+      const ICONS = { /* ИКОНКИ ОСТАЮТСЯ БЕЗ ИЗМЕНЕНИЙ */ 
         bookOpen: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-brand-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>`,
         search: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-brand-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>`,
         warning: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`,
@@ -96,29 +96,39 @@
       const footnotePopup = document.getElementById('footnote-popup');
       const mentionPopup = document.getElementById('mention-popup');
 
-      // ИСПРАВЛЕНО: Правильный порядок обработки Markdown и кастомных тегов.
+      // --- ИСПРАВЛЕННАЯ ФУНКЦИЯ ОБРАБОТКИ КОНТЕНТА ---
       function processContent(rawContent) {
         if (!rawContent) return '';
-        
-        // Шаг 1: Конвертируем основной Markdown (##, *, списки) в HTML.
-        // marked уже содержит встроенный DOMPurify для безопасности.
-        let html = marked.parse(rawContent);
+        let tempContent = rawContent;
+        const replacements = {};
+        let counter = 0;
+        const createPlaceholder = (type) => `__${type}_${counter++}__`;
 
-        // Шаг 2: В получившемся HTML ищем и заменяем наши специальные конструкции.
-        // Замена всплывающих сносок: [^текст:содержимое]
-        html = html.replace(/\[\^([^:]+):([^\]]+)\]/g, (match, text, footnote) => {
-          const encodedFootnote = DOMPurify.sanitize(footnote.trim()).replace(/"/g, '&quot;');
-          return `<a href="#" class="footnote-link" data-footnote-content="${encodedFootnote}">${text.trim()}</a>`;
-        });
-        
-        // Замена упоминаний с подтверждением: [@текст:id]
-        html = html.replace(/\[@([^:]+):([^\]]+)\]/g, (match, text, id) => {
-          const safeText = DOMPurify.sanitize(text.trim());
-          const safeId = DOMPurify.sanitize(id.trim());
-          return `<a href="#" class="mention-link" data-mention-id="${safeId}" data-mention-name="${safeText}">${safeText}</a>`;
+        // 1. Найти и заменить сноски на плейсхолдеры
+        tempContent = tempContent.replace(/\[\^([^:]+):([^\]]+)\]/g, (match, text, footnote) => {
+            const placeholder = createPlaceholder('FOOTNOTE');
+            const encodedFootnote = DOMPurify.sanitize(footnote.trim()).replace(/"/g, '&quot;');
+            replacements[placeholder] = `<a href="#" class="footnote-link" data-footnote-content="${encodedFootnote}">${DOMPurify.sanitize(text.trim())}</a>`;
+            return placeholder;
         });
 
-        // Возвращаем финальный HTML.
+        // 2. Найти и заменить упоминания на плейсхолдеры
+        tempContent = tempContent.replace(/\[@([^:]+):([^\]]+)\]/g, (match, text, id) => {
+            const placeholder = createPlaceholder('MENTION');
+            const safeText = DOMPurify.sanitize(text.trim());
+            const safeId = DOMPurify.sanitize(id.trim());
+            replacements[placeholder] = `<a href="#" class="mention-link" data-mention-id="${safeId}" data-mention-name="${safeText}">${safeText}</a>`;
+            return placeholder;
+        });
+        
+        // 3. Обработать оставшийся Markdown
+        let html = marked.parse(tempContent);
+
+        // 4. Вернуть HTML-теги на место плейсхолдеров
+        for (const placeholder in replacements) {
+            html = html.replace(new RegExp(placeholder, 'g'), replacements[placeholder]);
+        }
+        
         return html;
       }
 
@@ -144,7 +154,7 @@
       }
       
       function renderMainContentHtml(item) {
-        const getMobileHeader = () => `<header class="p-4 border-b border-brand-border flex items-center md:hidden sticky top-0 bg-brand-surface/80 backdrop-blur-sm z-10"><button id="menu-button" class="p-2 -ml-2 mr-2 text-gray-600 hover:bg-gray-100 rounded-full">${ICONS.menu}</button><h2 class="text-lg font-semibold text-brand-text-primary truncate">FamiliPedia</h2></header>`;
+        const getMobileHeader = () => `<header class="p-4 border-b border-brand-border flex items-center md:hidden sticky top-0 bg-brand-surface/80 backdrop-blur-sm z-10"><button id="menu-button" class="p-2 -ml-2 mr-2 text-gray-600 hover:bg-gray-100 rounded-full">${ICONS.menu}</button><h2 class="text-lg font-semibold text-brand-text-primary truncate">${item ? item.name : 'FamiliPedia'}</h2></header>`;
         if (!item) {
           return `<div class="h-full">${getMobileHeader()}<div class="flex flex-col items-center justify-center h-full text-center p-8"><div>${ICONS.welcomeBook}</div><h2 class="text-4xl font-bold font-serif text-brand-text-primary mb-2">Welcome to FamiliPedia</h2><p class="text-xl text-brand-text-secondary max-w-2xl mb-8 font-sans">Your personal space to cherish family stories.</p></div></div>`;
         }
@@ -186,11 +196,7 @@
       }
 
       function init() {
-        // Устанавливаем marked.parse для использования GFM (Github Flavored Markdown)
-        marked.setOptions({
-            gfm: true,
-            breaks: true, // Добавляем <br> на каждый перенос строки
-        });
+        marked.setOptions({ gfm: true, breaks: true });
 
         const initialId = window.location.hash.substring(1);
         if (initialId && state.items.find(i => i.id === initialId)) {
@@ -202,27 +208,22 @@
         renderFullPage();
 
         document.addEventListener('click', (e) => {
+            // ... (Вся логика обработчиков кликов остается без изменений) ...
             const app = e.target.closest('#app-container');
             if (app) {
               const link = e.target.closest('li[data-id] a');
               if (link) { 
                   e.preventDefault(); 
                   const id = link.parentElement.dataset.id; 
-                  if (id !== state.selectedItemId) { 
-                      window.location.hash = id; 
-                  } 
-                  if (window.innerWidth < 768) {
-                      toggleSidebar(true);
-                  }
+                  if (id !== state.selectedItemId) { window.location.hash = id; } 
+                  if (window.innerWidth < 768) { toggleSidebar(true); }
                   return;
               }
               const directLink = e.target.closest('a[href^="#"]');
-              if(directLink && !e.target.closest('.footnote-link, .mention-link')) {
+              if (directLink && !e.target.closest('.footnote-link, .mention-link')) {
                   e.preventDefault();
                   const id = directLink.getAttribute('href').substring(1);
-                  if (id !== state.selectedItemId) {
-                       window.location.hash = id;
-                  }
+                  if (id !== state.selectedItemId) { window.location.hash = id; }
                   return;
               }
               const copyButton = e.target.closest('[data-copy-link]');
