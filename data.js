@@ -23,7 +23,7 @@ const relativesData = [
         name: 'Eleanora Vance',
         birthDate: 'March 15, 1928',
         deathDate: 'July 22, 2018',
-        imageUrl: 'https://images.unsplash.com/photo-15825९3531622-1909a089d1f3?q=80&w=800&auto=format&fit=crop',
+        imageUrl: 'https://images.unsplash.com/photo-1582593531622-1909a089d1f3?q=80&w=800&auto=format&fit=crop',
         content: `Eleanora Vance was the matriarch of our family, known for her incredible resilience and boundless kindness. Born in a small village, she dreamed of seeing the world, a dream she fulfilled by traveling to over 30 countries throughout her life.
 
 ## A Life of Passion
