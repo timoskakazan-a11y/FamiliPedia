@@ -82,7 +82,7 @@ const relativesData = [
             ]
         },
         lockReason: '',
-        editingNotice: 'Статья еще редактируется.',
+        editingNotice: '',
         neutralityBanner: '',
         unverifiedBanner: 'Статья находится в стадии активного обновления. Многие важные факты и события, связанные с личностью, пока не представлены.'
     },
