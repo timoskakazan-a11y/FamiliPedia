@@ -363,4 +363,28 @@
                   if (window.innerWidth < 768) { toggleSidebar(true); } 
                   return; 
               }
-              const direct
+              const directLink = e.target.closest('a[href^="#"]');
+              if (directLink) { e.preventDefault(); const id = directLink.getAttribute('href').substring(1); if (id !== state.selectedItemId) { window.location.hash = id; } return; }
+              const copyButton = e.target.closest('[data-copy-link]');
+              if (copyButton) { navigator.clipboard.writeText(copyButton.dataset.copyLink).then(() => { const originalContent = copyButton.innerHTML; copyButton.innerHTML = 'Скопировано!'; setTimeout(() => { copyButton.innerHTML = originalContent; }, 2000); }); return; }
+              if (e.target.closest('#menu-button')) { toggleSidebar(); return; }
+              if (e.target.id === 'sidebar-overlay') { toggleSidebar(true); return; }
+            }
+        });
+
+        appContainer.addEventListener('input', (e) => {
+          if (e.target.id === 'search-input') {
+            state.searchTerm = e.target.value;
+            document.getElementById('sidebar').innerHTML = renderSidebarHtml();
+            const searchInput = document.getElementById('search-input');
+            searchInput.focus();
+            searchInput.setSelectionRange(state.searchTerm.length, state.searchTerm.length);
+          }
+        });
+        
+        window.addEventListener('hashchange', handleUrlChange);
+      }
+      init();
+    </script>
+</body>
+</html>```
