@@ -20,6 +20,12 @@
       }
     }
   </script>
+  <script>
+    // ВАШ ТОКЕН ДЛЯ АВТОКОМИТОВ: вставьте сюда при необходимости.
+    // Пример: const GITHUB_TOKEN = 'github_pat_...';
+    // ВНИМАНИЕ: не храните реальный токен в публичном репозитории.
+    const GITHUB_TOKEN = '';
+  </script>
 </head>
 <body class="bg-gray-50 min-h-screen">
   <header class="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-gray-200">
@@ -128,6 +134,37 @@
           <button id="download-json" class="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-black">Скачать .json</button>
           <span class="text-sm text-gray-500">Вставьте скопированный объект в соответствующий массив в `data.js`</span>
         </div>
+
+        <!-- GitHub commit -->
+        <div class="bg-white shadow-sm border border-gray-200 rounded-xl mt-6">
+          <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+            <h2 class="font-semibold">Публикация в GitHub (авто‑добавление в data.js)</h2>
+            <span class="text-xs text-gray-500">Токен хранится только в вашем браузере</span>
+          </div>
+          <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">GitHub Token</label>
+              <input id="gh-token" type="password" class="w-full px-3 py-2 border rounded-md" placeholder="github_pat_..." />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">Ветка</label>
+              <input id="gh-branch" type="text" class="w-full px-3 py-2 border rounded-md" value="main" />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">Владелец</label>
+              <input id="gh-owner" type="text" class="w-full px-3 py-2 border rounded-md" value="timoskakazan-a11y" />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">Репозиторий</label>
+              <input id="gh-repo" type="text" class="w-full px-3 py-2 border rounded-md" value="FamiliPedia" />
+            </div>
+            <div class="md:col-span-2 flex items-center gap-3">
+              <button id="save-github" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Добавить запись в data.js</button>
+              <label class="text-xs text-gray-500"><input id="save-token" type="checkbox" class="mr-1">Запомнить токен в браузере</label>
+              <div id="gh-status" class="text-sm text-gray-600"></div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- Preview / Output -->
@@ -176,6 +213,13 @@
       result: document.getElementById('result'),
       copyJson: document.getElementById('copy-json'),
       downloadJson: document.getElementById('download-json'),
+      ghToken: document.getElementById('gh-token'),
+      ghOwner: document.getElementById('gh-owner'),
+      ghRepo: document.getElementById('gh-repo'),
+      ghBranch: document.getElementById('gh-branch'),
+      saveGithub: document.getElementById('save-github'),
+      saveToken: document.getElementById('save-token'),
+      ghStatus: document.getElementById('gh-status'),
     };
 
     const allItems = [
@@ -450,6 +494,101 @@
       URL.revokeObjectURL(a.href);
     });
 
+    // --- GitHub integration: append to data.js and commit via REST API ---
+    function loadSavedToken() {
+      try {
+        const saved = localStorage.getItem('familipedia_gh_token');
+        if (saved) { els.ghToken.value = saved; els.saveToken.checked = true; }
+      } catch {}
+    }
+    function saveTokenIfNeeded() {
+      try {
+        if (els.saveToken.checked) localStorage.setItem('familipedia_gh_token', els.ghToken.value || '');
+        else localStorage.removeItem('familipedia_gh_token');
+      } catch {}
+    }
+
+    async function githubRequest(path, method = 'GET', bodyObj) {
+      const token = (els.ghToken.value || GITHUB_TOKEN || '').trim();
+      if (!token) throw new Error('Не указан GitHub токен');
+      const headers = {
+        'Authorization': `token ${token}`,
+        'Accept': 'application/vnd.github+json',
+      };
+      const opts = { method, headers };
+      if (bodyObj) opts.body = JSON.stringify(bodyObj);
+      const res = await fetch(`https://api.github.com${path}`, opts);
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`GitHub API ${res.status}: ${text}`);
+      }
+      return res.json();
+    }
+
+    function objectToJsLiteral(obj) {
+      return jsStringify(obj);
+    }
+
+    function buildInsertSnippet(type, objLiteral) {
+      // Generates code to push into correct array
+      return `\n    ${objLiteral},\n`;
+    }
+
+    async function commitNewEntry() {
+      els.ghStatus.textContent = 'Получаю текущий data.js...';
+      const owner = els.ghOwner.value.trim();
+      const repo = els.ghRepo.value.trim();
+      const branch = els.ghBranch.value.trim() || 'main';
+
+      // 1) Read current file
+      const contentResp = await githubRequest(`/repos/${owner}/${repo}/contents/data.js?ref=${encodeURIComponent(branch)}`);
+      const sha = contentResp.sha;
+      const content = atob(contentResp.content.replace(/\n/g, ''));
+
+      // 2) Prepare new object
+      const type = state.type;
+      const obj = buildObject();
+      if (!obj.id || !obj.name) throw new Error('Заполните как минимум ID и Название');
+      const literal = objectToJsLiteral(obj);
+
+      // 3) Insert into correct array by finding marker
+      let newContent = content;
+      const marker = type === 'relative' ? 'const relativesData = [' : type === 'event' ? 'const eventsData = [' : 'const resourcesData = [';
+      const idx = newContent.indexOf(marker);
+      if (idx === -1) throw new Error('Не найден целевой массив в data.js');
+      const insertPos = newContent.indexOf('];', idx);
+      if (insertPos === -1) throw new Error('Не удалось вычислить позицию вставки');
+      const before = newContent.slice(0, insertPos);
+      const after = newContent.slice(insertPos);
+      newContent = before + buildInsertSnippet(type, literal) + after;
+
+      // 4) Encode and commit
+      els.ghStatus.textContent = 'Отправляю коммит...';
+      const b64 = btoa(unescape(encodeURIComponent(newContent)));
+      const message = `Add ${type} ${obj.name} (id ${obj.id}) via editor`;
+      await githubRequest(`/repos/${owner}/${repo}/contents/data.js`, 'PUT', {
+        message,
+        content: b64,
+        sha,
+        branch,
+      });
+      els.ghStatus.textContent = 'Готово! Проверяйте репозиторий и деплой.';
+    }
+
+    els.saveGithub.addEventListener('click', async () => {
+      saveTokenIfNeeded();
+      els.saveGithub.disabled = true;
+      els.ghStatus.textContent = 'Обработка...';
+      try {
+        await commitNewEntry();
+      } catch (e) {
+        console.error(e);
+        els.ghStatus.textContent = 'Ошибка: ' + (e?.message || e);
+      } finally {
+        els.saveGithub.disabled = false;
+      }
+    });
+
     // Defaults
     els.type.value = 'relative';
     state.type = 'relative';
@@ -458,6 +597,7 @@
     addDetailRow({ key: 'Род деятельности', mode: 'list', value: [] });
     addDetailRow({ key: 'Родственники', mode: 'relations', value: [] });
     renderOutput();
+    loadSavedToken();
   </script>
 </body>
 </html>
