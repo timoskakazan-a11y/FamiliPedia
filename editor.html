@@ -24,7 +24,7 @@
     // ВАШ ТОКЕН ДЛЯ АВТОКОМИТОВ: вставьте сюда при необходимости.
     // Пример: const GITHUB_TOKEN = 'github_pat_...';
     // ВНИМАНИЕ: не храните реальный токен в публичном репозитории.
-    const GITHUB_TOKEN = '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';
+    const GITHUB_TOKEN = '';
   </script>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -508,13 +508,23 @@
       } catch {}
     }
 
+    function getAsciiToken() {
+      let token = (els.ghToken.value || GITHUB_TOKEN || '').trim();
+      if (!token) return '';
+      // Удаляем пробелы/переводы строк и запрещённые символы
+      token = token.replace(/\s+/g, '');
+      // Разрешаем только латиницу, цифры и подчёркивание (формат github_pat_...)
+      const cleaned = token.replace(/[^A-Za-z0-9_]/g, '');
+      return cleaned;
+    }
+
     async function githubRequest(path, method = 'GET', bodyObj) {
-      const token = (els.ghToken.value || GITHUB_TOKEN || '').trim();
+      const token = getAsciiToken();
       if (!token) throw new Error('Не указан GitHub токен');
-      const headers = {
-        'Authorization': `token ${token}`,
-        'Accept': 'application/vnd.github+json',
-      };
+      const headers = new Headers([
+        ['Authorization', `Bearer ${token}`],
+        ['Accept', 'application/vnd.github+json'],
+      ]);
       const opts = { method, headers };
       if (bodyObj) opts.body = JSON.stringify(bodyObj);
       const res = await fetch(`https://api.github.com${path}`, opts);
@@ -601,9 +611,5 @@
   </script>
 </body>
 </html>
-
-
-
-
 
 
