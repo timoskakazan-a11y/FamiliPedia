@@ -59,7 +59,7 @@ const relativesData = [
                 { name: 'Eleanora Vance', id: 'rel-1' }
             ]
         },
-        lockReason: 'Статья временно заблокирована из-за споров о точности представленных фактов.',
+        lockReason: 'Статья временно заблокирована по требованию глав.редакции.',
         editingNotice: '', 
         neutralityBanner: '', 
         unverifiedBanner: ''
@@ -140,7 +140,7 @@ const relativesData = [
 const eventsData = [
     {
         id: '1',
-        name: 'Пожар в старом доме',
+        name: 'тест',
         date: '12 мая 1995 г.',
         imageUrl: 'https://images.unsplash.com/photo-1561332560-165512755554?q=80&w=800&auto=format&fit=crop  ',
         content: `Это было трагическое событие, которое сильно повлияло на всю семью. Старый дом, в котором выросло не одно поколение, был уничтожен огнем из-за неисправной проводки.
@@ -155,14 +155,14 @@ const eventsData = [
             ],
             'Исход': 'Дом уничтожен, пострадавших нет'
         },
-        lockReason: '',
+        lockReason: 'Статья временно заблокирована по требованию глав.редакции.',
         editingNotice: '',
         neutralityBanner: '',
         unverifiedBanner: 'Требуется уточнение деталей у очевидцев.'
     },
     {
         id: '2',
-        name: 'Большое воссоединение семьи',
+        name: 'тест 2',
         date: '4-6 июля 2022 г.',
         imageUrl: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?q=80&w=800&auto=format&fit=crop  ',
         content: `Впервые за почти 10 лет вся семья собралась вместе, чтобы отпраздновать 70-летие Сэмюэла Торнтона. Мероприятие проходило в загородном доме у озера и длилось три дня.
@@ -174,7 +174,7 @@ const eventsData = [
             'Повод': '70-летие Сэмюэла Торнтона',
             'Присутствовало': '42 члена семьи'
         },
-        lockReason: '',
+        lockReason: 'Статья временно заблокирована по требованию глав.редакции.',
         editingNotice: '',
         neutralityBanner: '',
         unverifiedBanner: ''
@@ -218,7 +218,7 @@ const eventsData = [
             ],
             'Исход': 'Денежная компенсация, восстановление отношений'
         },
-        lockReason: '',
+        lockReason: 'Статья временно заблокирована по требованию глав.редакции.',
         editingNotice: '',
         neutralityBanner: 'Эта статья описывает конфликт и может требовать улучшения для сохранения нейтральности.',
         unverifiedBanner: ''
