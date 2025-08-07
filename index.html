@@ -243,19 +243,18 @@
                 let renderedValue;
                 if (Array.isArray(value)) {
                     const listItems = value.map(val => {
-                        // Обработка сложных объектов для образования и работы
                         if (typeof val === 'object' && val.name) {
-                            if (val.specialty) { // Образование
+                            if (val.specialty) { 
                                 return `<li><div class="font-semibold">${val.name}</div><div class="text-xs text-gray-500">${val.specialty}, ${val.status}</div></li>`;
                             }
-                            if (val.position) { // Место работы
+                            if (val.position) { 
                                 return `<li><div class="font-semibold">${val.name}</div><div class="text-xs text-gray-500">${val.position}, ${val.period}</div></li>`;
                             }
-                            if (val.id) { // Кликабельный родственник
+                            if (val.id) { 
                                 return `<li><a href="#${val.id}" class="mention-link">${val.name}</a></li>`;
                             }
                         }
-                        return `<li>${val}</li>`; // Простые строки
+                        return `<li>${val}</li>`;
                     }).join('');
                     renderedValue = `<ul class="list-none pl-0 space-y-1">${listItems}</ul>`;
                 } else { renderedValue = value; }
