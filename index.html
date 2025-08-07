@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FamiliPedia</title>
+    <!-- НОВАЯ ИКОНКА САЙТА (FAVICON) -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25' /%3E%3C/svg%3E">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -67,20 +69,21 @@
     <div id="footnote-popup" class="hidden opacity-0 absolute z-50 max-w-sm p-4 bg-white rounded-xl shadow-xl border border-gray-200 text-sm text-brand-text-primary"></div>
 
     <script type="module">
-      import { relativesData, eventsData } from './data.js';
+      import { relativesData, eventsData, resourcesData } from './data.js'; // ИМПОРТИРУЕМ НОВЫЕ ДАННЫЕ
       import { marked } from 'marked';
       import DOMPurify from 'dompurify';
 
       const state = {
         items: [
           ...relativesData.map(item => ({ ...item, id: `rel-${item.id}`, type: 'relative' })),
-          ...eventsData.map(item => ({ ...item, id: `evt-${item.id}`, type: 'event' }))
+          ...eventsData.map(item => ({ ...item, id: `evt-${item.id}`, type: 'event' })),
+          ...resourcesData.map(item => ({ ...item, id: `res-${item.id}`, type: 'resource' })) // ДОБАВЛЯЕМ РЕСУРСЫ В ОБЩИЙ СПИСОК
         ],
         selectedItemId: null,
         searchTerm: '',
       };
 
-      const ICONS = {
+      const ICONS = { /* ИКОНКИ БЕЗ ИЗМЕНЕНИЙ */
         bookOpen: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-brand-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>`,
         search: `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-brand-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>`,
         warning: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`,
@@ -97,16 +100,12 @@
       
       function processContent(rawContent) {
         if (!rawContent) return '';
-        
         let html = marked.parse(rawContent);
-        
         html = html.replace(/\[\^([^:]+):([^\]]+)\]/g, (match, text, footnote) => {
             const encodedFootnote = DOMPurify.sanitize(footnote.trim()).replace(/"/g, '&quot;');
             return `<a href="#" class="footnote-link" data-footnote-content="${encodedFootnote}">${DOMPurify.sanitize(text.trim())}</a>`;
         });
-        
         html = html.replace(/<a href="#(rel-\d+)"/g, '<a href="#$1" class="mention-link"');
-        
         return html;
       }
 
@@ -118,21 +117,24 @@
       function renderSidebarHtml() {
         const filteredItems = state.items.filter(i => (i.name || '').toLowerCase().includes(state.searchTerm.toLowerCase()));
         const createListHtml = (items, typeName) => {
-          if (filteredItems.filter(i => i.type === typeName).length === 0) return '';
-          const listContent = items.map(item => {
+          const relevantItems = filteredItems.filter(i => i.type === typeName);
+          if (relevantItems.length === 0) return '';
+          return relevantItems.map(item => {
             const isActive = item.id === state.selectedItemId;
             const activeClasses = 'bg-brand-accent text-white shadow-md shadow-blue-500/30';
             const inactiveClasses = 'text-brand-text-primary hover:bg-black/5';
             return `<li data-id="${item.id}"><a href="#${item.id}" class="block p-2.5 my-1 rounded-lg text-left w-full transition-colors duration-150 ${isActive ? activeClasses : inactiveClasses}"><span class="font-medium">${item.name}</span></a></li>`;
           }).join('');
-          return listContent || '<li class="text-sm text-gray-500 p-2">Ничего не найдено</li>';
         };
-        const relativesHtml = createListHtml(filteredItems.filter(i => i.type === 'relative'), 'relative');
-        const eventsHtml = createListHtml(filteredItems.filter(i => i.type === 'event'), 'event');
-        return `<div class="p-4 border-b border-black/10 flex items-center justify-between flex-shrink-0"><div class="flex items-center space-x-3">${ICONS.bookOpen}<h1 class="text-xl font-semibold text-brand-text-primary">FamiliPedia</h1></div></div><div class="p-4 flex-shrink-0"><div class="relative"><input type="text" placeholder="Search..." value="${state.searchTerm}" id="search-input" class="w-full pl-10 pr-4 py-2 bg-gray-100 text-brand-text-primary placeholder-brand-text-secondary border border-transparent rounded-lg focus:ring-2 focus:ring-brand-accent focus:outline-none focus:bg-white transition-all duration-300"><div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">${ICONS.search}</div></div></div><nav class="flex-1 overflow-y-auto px-4 pt-0">${relativesHtml ? `<details open class="mb-4"><summary class="flex items-center space-x-2 p-2 rounded-lg bg-gray-100 text-brand-text-primary"><span class="summary-arrow text-gray-500">▶</span><span>👨‍👩‍👧‍👦 Родственники</span></summary><ul class="pt-2 pl-4">${relativesHtml}</ul></details>` : ''}${eventsHtml ? `<details open><summary class="flex items-center space-x-2 p-2 rounded-lg bg-gray-100 text-brand-text-primary"><span class="summary-arrow text-gray-500">▶</span><span>🗓️ События</span></summary><ul class="pt-2 pl-4">${eventsHtml}</ul></details>` : ''}</nav>`;
+        const relativesHtml = createListHtml(filteredItems, 'relative');
+        const eventsHtml = createListHtml(filteredItems, 'event');
+        const resourcesHtml = createListHtml(filteredItems, 'resource'); // СОЗДАЕМ СПИСОК РЕСУРСОВ
+        
+        return `<div class="p-4 border-b border-black/10 flex items-center justify-between flex-shrink-0"><div class="flex items-center space-x-3">${ICONS.bookOpen}<h1 class="text-xl font-semibold text-brand-text-primary">FamiliPedia</h1></div></div><div class="p-4 flex-shrink-0"><div class="relative"><input type="text" placeholder="Search..." value="${state.searchTerm}" id="search-input" class="w-full pl-10 pr-4 py-2 bg-gray-100 text-brand-text-primary placeholder-brand-text-secondary border border-transparent rounded-lg focus:ring-2 focus:ring-brand-accent focus:outline-none focus:bg-white transition-all duration-300"><div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">${ICONS.search}</div></div></div><nav class="flex-1 overflow-y-auto px-4 pt-0">${relativesHtml ? `<details open class="mb-4"><summary class="flex items-center space-x-2 p-2 rounded-lg bg-gray-100 text-brand-text-primary"><span class="summary-arrow text-gray-500">▶</span><span>👨‍👩‍👧‍👦 Родственники</span></summary><ul class="pt-2 pl-4">${relativesHtml}</ul></details>` : ''}${eventsHtml ? `<details open class="mb-4"><summary class="flex items-center space-x-2 p-2 rounded-lg bg-gray-100 text-brand-text-primary"><span class="summary-arrow text-gray-500">▶</span><span>🗓️ События</span></summary><ul class="pt-2 pl-4">${eventsHtml}</ul></details>` : ''}${resourcesHtml ? `<details open><summary class="flex items-center space-x-2 p-2 rounded-lg bg-gray-100 text-brand-text-primary"><span class="summary-arrow text-gray-500">▶</span><span>🌐 Ресурсы</span></summary><ul class="pt-2 pl-4">${resourcesHtml}</ul></details>` : ''}</nav>`;
       }
       
       function renderMainContentHtml(item) {
+        // ... (Код этой функции остается без изменений) ...
         const getMobileHeader = () => `<header class="p-4 border-b border-brand-border flex items-center md:hidden sticky top-0 bg-brand-surface/80 backdrop-blur-sm z-10"><button id="menu-button" class="p-2 -ml-2 mr-2 text-gray-600 hover:bg-gray-100 rounded-full">${ICONS.menu}</button><h2 class="text-lg font-semibold text-brand-text-primary truncate">${item ? item.name : 'FamiliPedia'}</h2></header>`;
         if (!item) {
           return `<div class="h-full">${getMobileHeader()}<div class="flex flex-col items-center justify-center h-full text-center p-8"><div>${ICONS.welcomeBook}</div><h2 class="text-4xl font-bold font-serif text-brand-text-primary mb-2">Welcome to FamiliPedia</h2><p class="text-xl text-brand-text-secondary max-w-2xl mb-8 font-sans">Your personal space to cherish family stories.</p></div></div>`;
@@ -179,7 +181,7 @@
         if (initialId && state.items.find(i => i.id === initialId)) {
           state.selectedItemId = initialId;
         } else if (state.items.length > 0) {
-          state.selectedItemId = state.items[0].id;
+          state.selectedItemId = state.items.find(i => i.type === 'resource')?.id || state.items[0].id; // ОТКРЫВАЕМ СТАТЬЮ О РЕСУРСЕ ПО УМОЛЧАНИЮ
           window.history.replaceState(null, '', '#' + state.selectedItemId);
         }
         renderFullPage();
