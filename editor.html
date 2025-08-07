@@ -22,9 +22,9 @@
   </script>
   <script>
     // ВАШ ТОКЕН ДЛЯ АВТОКОМИТОВ: вставьте сюда при необходимости.
-    // Пример: const GITHUB_TOKEN = 'github_pat_...';
+    // Пример: const GITHUB_TOKEN = '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';
     // ВНИМАНИЕ: не храните реальный токен в публичном репозитории.
-    const GITHUB_TOKEN = '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';
+    const GITHUB_TOKEN = '';
   </script>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -160,6 +160,7 @@
             </div>
             <div class="md:col-span-2 flex items-center gap-3">
               <button id="save-github" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Добавить запись в data.js</button>
+              <button id="check-token" type="button" class="px-3 py-2 bg-gray-100 border rounded-md hover:bg-gray-200">Проверить токен</button>
               <label class="text-xs text-gray-500"><input id="save-token" type="checkbox" class="mr-1">Запомнить токен в браузере</label>
               <div id="gh-status" class="text-sm text-gray-600"></div>
             </div>
@@ -508,23 +509,20 @@
       } catch {}
     }
 
-    function getAsciiToken() {
-      let token = (els.ghToken.value || GITHUB_TOKEN || '').trim();
-      if (!token) return '';
-      // Удаляем пробелы/переводы строк и запрещённые символы
-      token = token.replace(/\s+/g, '');
-      // Разрешаем только латиницу, цифры и подчёркивание (формат github_pat_...)
-      const cleaned = token.replace(/[^A-Za-z0-9_]/g, '');
-      return cleaned;
+    function getRawToken() {
+      // Не фильтруем символы — GitHub PAT может содержать дефисы и т.п.
+      // Только убираем пробелы/переносы по краям.
+      const t = (els.ghToken.value || GITHUB_TOKEN || '').trim();
+      return t;
     }
 
     async function githubRequest(path, method = 'GET', bodyObj) {
-      const token = getAsciiToken();
+      const token = getRawToken();
       if (!token) throw new Error('Не указан GitHub токен');
-      const headers = new Headers([
-        ['Authorization', `token ${token}`],
-        ['Accept', 'application/vnd.github+json'],
-      ]);
+      // Формируем Request вручную, чтобы исключить влияние окружения
+      const headers = new Headers();
+      headers.set('Authorization', `token ${token}`);
+      headers.set('Accept', 'application/vnd.github+json');
       const opts = { method, headers };
       if (bodyObj) opts.body = JSON.stringify(bodyObj);
       const res = await fetch(`https://api.github.com${path}`, opts);
@@ -603,6 +601,18 @@
       }
     });
 
+    // Проверка токена с GitHub /user
+    document.getElementById('check-token').addEventListener('click', async () => {
+      els.ghStatus.textContent = 'Проверка токена...';
+      try {
+        const json = await githubRequest('/user', 'GET');
+        els.ghStatus.textContent = `OK: ${json.login}`;
+      } catch (e) {
+        console.error(e);
+        els.ghStatus.textContent = 'Ошибка: ' + (e?.message || e);
+      }
+    });
+
     // Defaults
     els.type.value = 'relative';
     state.type = 'relative';
@@ -615,7 +625,5 @@
   </script>
 </body>
 </html>
-
-
 
 
