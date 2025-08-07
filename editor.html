@@ -24,7 +24,7 @@
     // ВАШ ТОКЕН ДЛЯ АВТОКОМИТОВ: вставьте сюда при необходимости.
     // Пример: const GITHUB_TOKEN = 'github_pat_...';
     // ВНИМАНИЕ: не храните реальный токен в публичном репозитории.
-    const GITHUB_TOKEN = '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';
+    const GITHUB_TOKEN = '';
   </script>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -522,7 +522,7 @@
       const token = getAsciiToken();
       if (!token) throw new Error('Не указан GitHub токен');
       const headers = new Headers([
-        ['Authorization', `Bearer ${token}`],
+        ['Authorization', `token ${token}`],
         ['Accept', 'application/vnd.github+json'],
       ]);
       const opts = { method, headers };
@@ -553,7 +553,9 @@
       // 1) Read current file
       const contentResp = await githubRequest(`/repos/${owner}/${repo}/contents/data.js?ref=${encodeURIComponent(branch)}`);
       const sha = contentResp.sha;
-      const content = atob(contentResp.content.replace(/\n/g, ''));
+      const content = typeof atob === 'function'
+        ? atob(contentResp.content.replace(/\n/g, ''))
+        : Buffer.from(contentResp.content, 'base64').toString('utf-8');
 
       // 2) Prepare new object
       const type = state.type;
@@ -574,7 +576,9 @@
 
       // 4) Encode and commit
       els.ghStatus.textContent = 'Отправляю коммит...';
-      const b64 = btoa(unescape(encodeURIComponent(newContent)));
+      const b64 = typeof btoa === 'function'
+        ? btoa(unescape(encodeURIComponent(newContent)))
+        : Buffer.from(newContent, 'utf-8').toString('base64');
       const message = `Add ${type} ${obj.name} (id ${obj.id}) via editor`;
       await githubRequest(`/repos/${owner}/${repo}/contents/data.js`, 'PUT', {
         message,
@@ -611,7 +615,5 @@
   </script>
 </body>
 </html>
-
-
 
 
