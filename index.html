@@ -243,10 +243,21 @@
                 let renderedValue;
                 if (Array.isArray(value)) {
                     const listItems = value.map(val => {
-                        if (typeof val === 'object' && val.name && val.id) return `<li><a href="#${val.id}" class="mention-link">${val.name}</a></li>`;
-                        return `<li>${val}</li>`;
+                        // Обработка сложных объектов для образования и работы
+                        if (typeof val === 'object' && val.name) {
+                            if (val.specialty) { // Образование
+                                return `<li><div class="font-semibold">${val.name}</div><div class="text-xs text-gray-500">${val.specialty}, ${val.status}</div></li>`;
+                            }
+                            if (val.position) { // Место работы
+                                return `<li><div class="font-semibold">${val.name}</div><div class="text-xs text-gray-500">${val.position}, ${val.period}</div></li>`;
+                            }
+                            if (val.id) { // Кликабельный родственник
+                                return `<li><a href="#${val.id}" class="mention-link">${val.name}</a></li>`;
+                            }
+                        }
+                        return `<li>${val}</li>`; // Простые строки
                     }).join('');
-                    renderedValue = `<ul class="list-none pl-0">${listItems}</ul>`;
+                    renderedValue = `<ul class="list-none pl-0 space-y-1">${listItems}</ul>`;
                 } else { renderedValue = value; }
 
                 if ((key === 'Родился' || key === 'Родилась' || key === 'Умерла') && item.type === 'relative') {
