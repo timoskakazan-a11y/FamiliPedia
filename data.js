@@ -114,7 +114,7 @@ const relativesData = [
         name: 'Закиров Тимур',
         birthDate: '10 сентября 2011 г.',
         deathDate: '',
-        imageUrl: 'blob:https://web.telegram.org/9cc20ac1-c4b0-4c51-99cb-6c2b1d1e3e65',
+        imageUrl: 'https://postimg.cc/t7LgmFtY',
         content: `Тимур — юный энтузиаст технологий и главный разработчик проекта **FamiliPedia**. Проявляя интерес к точным наукам и программированию с ранних лет, он самостоятельно изучает веб-дизайн и сферу искусственного интеллекта.
 
 ## Увлечения и учеба
