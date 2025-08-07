@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FamiliPedia — Редактор статей</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+    .prose h2 { font-size: 1.25rem; font-weight: 700; margin-top: 1.5em; margin-bottom: 0.75em; }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "marked": "https://esm.sh/marked@^12.0.2",
+        "dompurify": "https://esm.sh/dompurify@^3.1.2"
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <header class="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="text-2xl">📚</div>
+        <div>
+          <h1 class="text-xl font-semibold">FamiliPedia — Редактор статей</h1>
+          <p class="text-sm text-gray-500">Быстрое создание записей для `data.js`</p>
+        </div>
+      </div>
+      <nav class="text-sm">
+        <a href="./index.html" class="text-blue-600 hover:underline">Перейти к сайту</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <!-- Form -->
+      <section class="xl:col-span-2 space-y-6">
+        <div class="bg-white shadow-sm border border-gray-200 rounded-xl">
+          <div class="p-4 border-b border-gray-200 flex flex-wrap items-center gap-3">
+            <label class="text-sm text-gray-600">Тип статьи</label>
+            <select id="type" class="px-3 py-2 border rounded-md">
+              <option value="relative">Родственник</option>
+              <option value="event">Событие</option>
+              <option value="resource">Ресурс</option>
+            </select>
+            <div class="ml-auto flex items-center gap-2 text-sm text-gray-500">
+              <button id="gen-id" class="px-3 py-1.5 rounded-md bg-gray-100 hover:bg-gray-200 border">Автогенерация ID</button>
+              <span class="hidden md:inline">(ищется следующий свободный ID)</span>
+            </div>
+          </div>
+          <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">ID (число)</label>
+              <input id="id" type="number" min="1" class="w-full px-3 py-2 border rounded-md" placeholder="например, 6" />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">Название</label>
+              <input id="name" type="text" class="w-full px-3 py-2 border rounded-md" placeholder="Имя / Название события / Ресурс" />
+            </div>
+            <div class="type-relative">
+              <label class="block text-sm text-gray-600 mb-1">Дата рождения</label>
+              <input id="birthDate" type="text" class="w-full px-3 py-2 border rounded-md" placeholder="например, 5 октября 1986 г. или October 5, 1986" />
+            </div>
+            <div class="type-relative">
+              <label class="block text-sm text-gray-600 mb-1">Дата смерти</label>
+              <input id="deathDate" type="text" class="w-full px-3 py-2 border rounded-md" placeholder="оставьте пустым, если человек жив" />
+            </div>
+            <div class="type-event hidden">
+              <label class="block text-sm text-gray-600 mb-1">Дата события</label>
+              <input id="date" type="text" class="w-full px-3 py-2 border rounded-md" placeholder="например, 12 мая 1995 г." />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm text-gray-600 mb-1">Ссылка на изображение</label>
+              <input id="imageUrl" type="text" class="w-full px-3 py-2 border rounded-md" placeholder="https://..." />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm text-gray-600 mb-1">Текст (Markdown)</label>
+              <textarea id="content" rows="10" class="w-full px-3 py-2 border rounded-md font-mono" placeholder="Поддерживаются [ссылки](https://example.com), внутренние ссылки вида [текст](#rel-1) и всплывающие сноски: [^слово:описание]"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Details builder -->
+        <div class="bg-white shadow-sm border border-gray-200 rounded-xl">
+          <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+            <h2 class="font-semibold">Инфобокс — детали</h2>
+            <div class="text-sm text-gray-500">Добавляйте пары ключ-значение и списки</div>
+          </div>
+          <div id="details-list" class="p-4 space-y-4"></div>
+          <div class="p-4 border-t border-gray-200">
+            <button id="add-detail" class="px-3 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700">Добавить поле</button>
+          </div>
+        </div>
+
+        <!-- Optional banners -->
+        <div class="bg-white shadow-sm border border-gray-200 rounded-xl">
+          <div class="p-4 border-b border-gray-200">
+            <h2 class="font-semibold">Дополнительно (опционально)</h2>
+          </div>
+          <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">Причина блокировки (lockReason)</label>
+              <input id="lockReason" type="text" class="w-full px-3 py-2 border rounded-md" />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">Заметка о редактировании (editingNotice)</label>
+              <input id="editingNotice" type="text" class="w-full px-3 py-2 border rounded-md" />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">Баннер нейтральности (neutralityBanner)</label>
+              <input id="neutralityBanner" type="text" class="w-full px-3 py-2 border rounded-md" />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">Баннер проверки (unverifiedBanner)</label>
+              <input id="unverifiedBanner" type="text" class="w-full px-3 py-2 border rounded-md" />
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-3">
+          <button id="copy-json" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">Скопировать объект</button>
+          <button id="download-json" class="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-black">Скачать .json</button>
+          <span class="text-sm text-gray-500">Вставьте скопированный объект в соответствующий массив в `data.js`</span>
+        </div>
+      </section>
+
+      <!-- Preview / Output -->
+      <aside class="space-y-6">
+        <div class="bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden">
+          <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+            <h2 class="font-semibold">Предпросмотр Markdown</h2>
+            <span class="text-xs text-gray-500">Санитизированный HTML</span>
+          </div>
+          <div id="preview" class="p-4 prose max-w-none"></div>
+        </div>
+
+        <div class="bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden">
+          <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+            <h2 class="font-semibold">Сгенерированный объект</h2>
+            <span class="text-xs text-gray-500">Формат JavaScript</span>
+          </div>
+          <pre id="result" class="p-4 overflow-x-auto text-sm bg-gray-50"><code></code></pre>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script type="module">
+    import { marked } from 'marked';
+    import DOMPurify from 'dompurify';
+    import { relativesData, eventsData, resourcesData } from './data.js';
+
+    const els = {
+      type: document.getElementById('type'),
+      id: document.getElementById('id'),
+      name: document.getElementById('name'),
+      birthDate: document.getElementById('birthDate'),
+      deathDate: document.getElementById('deathDate'),
+      date: document.getElementById('date'),
+      imageUrl: document.getElementById('imageUrl'),
+      content: document.getElementById('content'),
+      lockReason: document.getElementById('lockReason'),
+      editingNotice: document.getElementById('editingNotice'),
+      neutralityBanner: document.getElementById('neutralityBanner'),
+      unverifiedBanner: document.getElementById('unverifiedBanner'),
+      genId: document.getElementById('gen-id'),
+      detailsList: document.getElementById('details-list'),
+      addDetail: document.getElementById('add-detail'),
+      preview: document.getElementById('preview'),
+      result: document.getElementById('result'),
+      copyJson: document.getElementById('copy-json'),
+      downloadJson: document.getElementById('download-json'),
+    };
+
+    const allItems = [
+      ...relativesData.map(x => ({ id: `rel-${x.id}`, name: x.name, type: 'relative' })),
+      ...eventsData.map(x => ({ id: `evt-${x.id}`, name: x.name, type: 'event' })),
+      ...resourcesData.map(x => ({ id: `res-${x.id}`, name: x.name, type: 'resource' })),
+    ];
+
+    const state = {
+      type: 'relative',
+      details: [], // array of {key, mode, value}
+    };
+
+    marked.setOptions({ gfm: true, breaks: true });
+
+    function nextIdFor(type) {
+      const arr = type === 'relative' ? relativesData : type === 'event' ? eventsData : resourcesData;
+      const nums = arr.map(x => Number(x.id)).filter(n => !Number.isNaN(n));
+      const max = nums.length ? Math.max(...nums) : 0;
+      return String(max + 1);
+    }
+
+    function toggleTypeUI() {
+      const isRel = state.type === 'relative';
+      const isEvt = state.type === 'event';
+      document.querySelectorAll('.type-relative').forEach(el => el.classList.toggle('hidden', !isRel));
+      document.querySelectorAll('.type-event').forEach(el => el.classList.toggle('hidden', !isEvt));
+    }
+
+    function addDetailRow(prefill = {}) {
+      const row = document.createElement('div');
+      row.className = 'p-3 border rounded-lg';
+      row.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-start">
+          <div class="md:col-span-2">
+            <label class="block text-xs text-gray-600 mb-1">Ключ</label>
+            <input type="text" class="w-full px-2 py-1.5 border rounded" value="${prefill.key ?? ''}" placeholder="Например: Родился" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-600 mb-1">Тип значения</label>
+            <select class="w-full px-2 py-1.5 border rounded">
+              <option value="text" ${prefill.mode === 'text' || !prefill.mode ? 'selected' : ''}>Текст</option>
+              <option value="list" ${prefill.mode === 'list' ? 'selected' : ''}>Список (по строкам)</option>
+              <option value="relations" ${prefill.mode === 'relations' ? 'selected' : ''}>Список ссылок на статьи</option>
+              <option value="education" ${prefill.mode === 'education' ? 'selected' : ''}>Образование</option>
+              <option value="work" ${prefill.mode === 'work' ? 'selected' : ''}>Места работы</option>
+            </select>
+          </div>
+          <div class="md:col-span-3 value-holder"></div>
+          <div class="flex items-end justify-end">
+            <button class="remove px-2.5 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded hover:bg-red-100">Удалить</button>
+          </div>
+        </div>
+      `;
+
+      const keyEl = row.querySelector('input[type="text"]');
+      const modeEl = row.querySelector('select');
+      const holder = row.querySelector('.value-holder');
+
+      function renderValueEditor() {
+        const mode = modeEl.value;
+        if (mode === 'text') {
+          holder.innerHTML = `<label class="block text-xs text-gray-600 mb-1">Значение</label><input class="w-full px-2 py-1.5 border rounded" value="${prefill.value ?? ''}">`;
+        } else if (mode === 'list') {
+          const val = Array.isArray(prefill.value) ? prefill.value.join('\n') : (prefill.value ?? '');
+          holder.innerHTML = `<label class=\"block text-xs text-gray-600 mb-1\">Элементы (по строкам)</label><textarea rows=\"4\" class=\"w-full px-2 py-1.5 border rounded font-mono\">${val}</textarea>`;
+        } else if (mode === 'relations') {
+          const selectedIds = (Array.isArray(prefill.value) ? prefill.value : []).map(v => v.id);
+          const options = allItems.map(it => `<option value="${it.id}" ${selectedIds.includes(it.id) ? 'selected' : ''}>${it.name} (${it.id})</option>`).join('');
+          holder.innerHTML = `
+            <label class="block text-xs text-gray-600 mb-1">Выберите статьи (Ctrl/Cmd + клик)</label>
+            <select multiple size="6" class="w-full px-2 py-1.5 border rounded">${options}</select>
+          `;
+        } else if (mode === 'education') {
+          // rows of {name, specialty, status}
+          const list = Array.isArray(prefill.value) ? prefill.value : [];
+          holder.innerHTML = `
+            <div class="space-y-2">
+              <div class="flex items-center justify-between"><label class="text-xs text-gray-600">Список образований</label><button class="add-edu px-2 py-1 border rounded bg-gray-100">Добавить</button></div>
+              <div class="edu-list space-y-2"></div>
+            </div>
+          `;
+          const listEl = holder.querySelector('.edu-list');
+          function renderRows() {
+            listEl.innerHTML = '';
+            list.forEach((item, idx) => {
+              const row = document.createElement('div');
+              row.className = 'grid grid-cols-1 md:grid-cols-3 gap-2';
+              row.innerHTML = `
+                <input class="px-2 py-1.5 border rounded" placeholder="ВУЗ" value="${item.name ?? ''}">
+                <input class="px-2 py-1.5 border rounded" placeholder="Специальность" value="${item.specialty ?? ''}">
+                <div class="flex gap-2">
+                  <input class="flex-1 px-2 py-1.5 border rounded" placeholder="Статус" value="${item.status ?? ''}">
+                  <button class="del px-2 border rounded bg-red-50 text-red-700">×</button>
+                </div>
+              `;
+              row.querySelector('.del').addEventListener('click', () => { list.splice(idx,1); renderRows(); update(); });
+              const [nameEl, specEl, statusEl] = row.querySelectorAll('input');
+              nameEl.addEventListener('input', () => { item.name = nameEl.value; update(); });
+              specEl.addEventListener('input', () => { item.specialty = specEl.value; update(); });
+              statusEl.addEventListener('input', () => { item.status = statusEl.value; update(); });
+              listEl.appendChild(row);
+            });
+          }
+          renderRows();
+          holder.querySelector('.add-edu').addEventListener('click', () => { list.push({ name: '', specialty: '', status: '' }); renderRows(); update(); });
+          holder._getValue = () => list.slice();
+          return;
+        } else if (mode === 'work') {
+          // rows of {name, position, period}
+          const list = Array.isArray(prefill.value) ? prefill.value : [];
+          holder.innerHTML = `
+            <div class="space-y-2">
+              <div class="flex items-center justify-between"><label class="text-xs text-gray-600">Места работы</label><button class="add-work px-2 py-1 border rounded bg-gray-100">Добавить</button></div>
+              <div class="work-list space-y-2"></div>
+            </div>
+          `;
+          const listEl = holder.querySelector('.work-list');
+          function renderRows() {
+            listEl.innerHTML = '';
+            list.forEach((item, idx) => {
+              const row = document.createElement('div');
+              row.className = 'grid grid-cols-1 md:grid-cols-3 gap-2';
+              row.innerHTML = `
+                <input class="px-2 py-1.5 border rounded" placeholder="Компания" value="${item.name ?? ''}">
+                <input class="px-2 py-1.5 border rounded" placeholder="Должность" value="${item.position ?? ''}">
+                <div class="flex gap-2">
+                  <input class="flex-1 px-2 py-1.5 border rounded" placeholder="Период" value="${item.period ?? ''}">
+                  <button class="del px-2 border rounded bg-red-50 text-red-700">×</button>
+                </div>
+              `;
+              row.querySelector('.del').addEventListener('click', () => { list.splice(idx,1); renderRows(); update(); });
+              const [nameEl, posEl, perEl] = row.querySelectorAll('input');
+              nameEl.addEventListener('input', () => { item.name = nameEl.value; update(); });
+              posEl.addEventListener('input', () => { item.position = posEl.value; update(); });
+              perEl.addEventListener('input', () => { item.period = perEl.value; update(); });
+              listEl.appendChild(row);
+            });
+          }
+          renderRows();
+          holder.querySelector('.add-work').addEventListener('click', () => { list.push({ name: '', position: '', period: '' }); renderRows(); update(); });
+          holder._getValue = () => list.slice();
+          return;
+        }
+
+        holder._getValue = () => {
+          const mode = modeEl.value;
+          if (mode === 'text') return holder.querySelector('input').value;
+          if (mode === 'list') return holder.querySelector('textarea').value.split('\n').map(s => s.trim()).filter(Boolean);
+          if (mode === 'relations') {
+            const sel = holder.querySelector('select');
+            return Array.from(sel.selectedOptions).map(o => {
+              const item = allItems.find(i => i.id === o.value);
+              return item ? { name: item.name, id: item.id } : { name: o.textContent, id: o.value };
+            });
+          }
+          return null;
+        };
+      }
+
+      renderValueEditor();
+      modeEl.addEventListener('change', () => { renderValueEditor(); update(); });
+      row.querySelector('.remove').addEventListener('click', () => { row.remove(); update(); });
+      row.addEventListener('input', () => update());
+
+      els.detailsList.appendChild(row);
+    }
+
+    function collectDetailsObject() {
+      const obj = {};
+      els.detailsList.querySelectorAll('.p-3.border.rounded-lg').forEach(row => {
+        const key = row.querySelector('input[type="text"]').value.trim();
+        const mode = row.querySelector('select').value;
+        const holder = row.querySelector('.value-holder');
+        if (!key) return;
+        const value = holder._getValue ? holder._getValue() : null;
+        obj[key] = value;
+      });
+      return obj;
+    }
+
+    function buildObject() {
+      const type = state.type;
+      const id = String(els.id.value || '').trim();
+      const base = {
+        id,
+        name: String(els.name.value || '').trim(),
+        imageUrl: String(els.imageUrl.value || '').trim(),
+        content: String(els.content.value || '').trim(),
+      };
+      const banners = {
+        lockReason: String(els.lockReason.value || '').trim(),
+        editingNotice: String(els.editingNotice.value || '').trim(),
+        neutralityBanner: String(els.neutralityBanner.value || '').trim(),
+        unverifiedBanner: String(els.unverifiedBanner.value || '').trim(),
+      };
+      const details = collectDetailsObject();
+
+      if (type === 'relative') {
+        return {
+          ...base,
+          birthDate: String(els.birthDate.value || '').trim(),
+          deathDate: String(els.deathDate.value || '').trim(),
+          details,
+          ...banners,
+        };
+      }
+      if (type === 'event') {
+        return {
+          ...base,
+          date: String(els.date.value || '').trim(),
+          details,
+          ...banners,
+        };
+      }
+      // resource
+      return {
+        ...base,
+        details,
+      };
+    }
+
+    function jsStringify(obj) {
+      // Stringify to a pretty JS object literal (not JSON quotes for keys)
+      const json = JSON.stringify(obj, (k, v) => v, 2);
+      // Make it look like data.js style by unquoting simple keys
+      return json
+        .replace(/\"(\w+)\":/g, '$1:')
+        .replace(/\\n/g, '\n');
+    }
+
+    function renderOutput() {
+      const obj = buildObject();
+      const code = jsStringify(obj);
+      els.result.querySelector('code').textContent = code;
+
+      const html = marked.parse(obj.content || '');
+      els.preview.innerHTML = DOMPurify.sanitize(html);
+    }
+
+    function update() { renderOutput(); }
+
+    // Events
+    els.type.addEventListener('change', () => {
+      state.type = els.type.value;
+      toggleTypeUI();
+      els.id.value = nextIdFor(state.type);
+      renderOutput();
+    });
+    els.genId.addEventListener('click', () => { els.id.value = nextIdFor(state.type); renderOutput(); });
+
+    [els.id, els.name, els.birthDate, els.deathDate, els.date, els.imageUrl, els.content, els.lockReason, els.editingNotice, els.neutralityBanner, els.unverifiedBanner]
+      .forEach(el => el && el.addEventListener('input', update));
+
+    els.addDetail.addEventListener('click', () => addDetailRow());
+
+    els.copyJson.addEventListener('click', async () => {
+      const text = els.result.querySelector('code').textContent;
+      await navigator.clipboard.writeText(text);
+      els.copyJson.textContent = 'Скопировано!';
+      setTimeout(() => (els.copyJson.textContent = 'Скопировать объект'), 1200);
+    });
+
+    els.downloadJson.addEventListener('click', () => {
+      const obj = buildObject();
+      const blob = new Blob([jsStringify(obj)], { type: 'application/json;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      const fname = `${state.type}-${obj.id || 'new'}.json`;
+      a.download = fname;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+
+    // Defaults
+    els.type.value = 'relative';
+    state.type = 'relative';
+    toggleTypeUI();
+    els.id.value = nextIdFor('relative');
+    addDetailRow({ key: 'Род деятельности', mode: 'list', value: [] });
+    addDetailRow({ key: 'Родственники', mode: 'relations', value: [] });
+    renderOutput();
+  </script>
+</body>
+</html>
+
+
